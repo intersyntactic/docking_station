@@ -237,8 +237,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: cfd90cd
-      resolved-ref: cfd90cd151be43c1842a0e3fb6a9e971d5faefdd
+      ref: "v0.0.2"
+      resolved-ref: "6213d8760b9309e17c6a286e2942f70bf91ef9eb"
       url: "https://github.com/intersyntactic/teams_module.git"
     source: git
     version: "0.0.2"

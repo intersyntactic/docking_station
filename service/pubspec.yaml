@@ -19,7 +19,7 @@ dependencies:
   is_teams_module:
     git:
       url: https://github.com/intersyntactic/teams_module.git
-      ref: cfd90cd
+      ref: v0.0.2
 
 dev_dependencies:
   lints: ^6.1.0
