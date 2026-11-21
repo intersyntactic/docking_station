@@ -1,8 +1,7 @@
 /// The reading contract: what a module gives the docking station, and all it
 /// gives.
 ///
-/// A module takes part only by describing (RULINGS, "The docking station admits
-/// events under journey paths"). The docking station hands its
+/// A module takes part only by describing. The docking station hands its
 /// [ModuleReading] every event from the module's relay, in the record's
 /// order, and for each the reading says what it is: a [EventReading]. The
 /// docking station never reads a module's bytes itself, and the module never
@@ -133,9 +132,7 @@ sealed class AddressedEvent extends EventReading {
   /// itself does.
   ///
   /// It is what the outside groups its addresses by: a channel is a
-  /// mission and each of its threads a trajectory (Nick, 2026-11-15:
-  /// "channel = journey, thread = journey path", since renamed mission and
-  /// trajectory). The reading names it so
+  /// mission and each of its threads a trajectory. The reading names it so
   /// the docking station never reads a module's ids to find it.
   final AddressInExternalSystem? containingAddress;
 

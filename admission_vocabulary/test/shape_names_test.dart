@@ -3,7 +3,7 @@
 // node read as the other. The docking station decodes nodes from several
 // packages, so it checks (Nick, 16 Nov). Kept: it guards a wire contract
 // across packages, which nothing else checks.
-import 'package:is_docking_station/is_docking_station.dart';
+import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
 import 'package:test/test.dart';
 
 void main() {

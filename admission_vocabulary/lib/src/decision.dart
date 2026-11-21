@@ -33,7 +33,6 @@ import 'package:is_shapes/is_shapes.dart'
     show ActorId, DecidedBy, MissionId, TrajectoryId;
 
 import 'reading.dart';
-import 'rules.dart';
 
 /// The kinds of entry the docking station sends, one per event. Its user's
 /// row in the record's sender table allows these four and nothing else.
@@ -154,18 +153,18 @@ sealed class AdmissionDecision {
 /// [StartsMission].
 ///
 /// [rules] are there exactly when the admission starts a mission or a
-/// trajectory: the rules the mission was admitted under, as the [JourneyRule]
-/// gave them, copied into each trajectory it starts. loop_launcher reads a
-/// trajectory's rules from the entry that started it, and the airlock enforces
-/// them; the docking station passes them through unread.
+/// trajectory: the rules the mission was admitted under, as the docking
+/// station's rule for which address starts a mission gave them, copied into
+/// each trajectory it starts. loop_launcher reads a trajectory's rules from the
+/// entry that started it, and the airlock enforces them; the docking station
+/// passes them through unread.
 ///
 /// [startsTurn] is there exactly when the reading is [MessageSaid]: whether the
-/// agent answers it, as the [TurnRule] said. Something said that starts no turn
-/// is still admitted under its address's trajectory, so the agent has it as
-/// context (Nick, 16 Nov: "yeah that sounds right", to admitting it rather than
-/// declining it). It never starts a trajectory, since a trajectory brings up an
-/// agent loop: one that starts no turn where its address has no trajectory yet
-/// is [SaidStartsNoTurn].
+/// agent answers it, as the docking station's turn rule said. Something said
+/// that starts no turn is still admitted under its address's trajectory, so the
+/// agent has it as context. It never starts a trajectory, since a trajectory
+/// brings up an agent loop: one that starts no turn where its address has no
+/// trajectory yet is [SaidStartsNoTurn].
 ///
 /// The reading's [containingAddress] is kept so which mission an address in an
 /// external system is can be rebuilt from decisions alone; its [from], for
@@ -240,11 +239,9 @@ final class EventAdmittedToMission extends AdmissionDecision {
 /// trajectories' chains (is_logbook). The person's next message in it opens it
 /// again, on a new trajectory (RULINGS).
 ///
-/// The docking station ends missions (Nick, 16 Nov, of journeys since
-/// renamed missions: "probably the docking station should end a journey,
-/// no?", and not as a tool of the agent's). What event ends one is not
-/// decided yet, so nothing decides one here; it is read back like any other
-/// decision.
+/// The docking station ends missions; the agent has no tool that does. What
+/// event ends one is not decided yet, so nothing decides one yet; it is read
+/// back like any other decision.
 ///
 /// The entry, of kind `mission-ended`:
 ///
@@ -340,9 +337,9 @@ final class DuplicateEvent extends NotAdmittedKeyedEvent {
   final ObjectId of;
 }
 
-/// [addressInExternalSystem]'s mission hasn't started, and the
-/// [JourneyRule] doesn't admit it. The next event from it is asked about
-/// again.
+/// [addressInExternalSystem]'s mission hasn't started, and the docking
+/// station's rule for which address starts a mission doesn't start one for
+/// it. The next event from it is asked about again.
 final class AddressNotAdmittedToMission extends NotAdmittedKeyedEvent {
   const AddressNotAdmittedToMission(
     super.event, {

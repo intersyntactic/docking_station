@@ -5,9 +5,9 @@ import 'package:checked_json/checked_json.dart' show JsonObject;
 import 'package:is_logbook_client/is_logbook_client.dart' show ObjectId;
 import 'package:is_shapes/is_shapes.dart' show DecidedBy;
 
+import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
+
 import 'decided.dart';
-import 'decision.dart';
-import 'reading.dart';
 import 'rules.dart';
 
 /// What the docking station decides about the event recorded at [event], read

@@ -9,13 +9,14 @@ repository: https://github.com/intersyntactic/docking_station
 environment:
   sdk: ^3.13.0
 
+publish_to: none
+
 dependencies:
   checked_json: ^0.2.1
-  is_annotation_shapes: ^0.3.2
+  # Until the engine moves into the service and this package is deleted.
+  is_admission_vocabulary:
+    path: admission_vocabulary
   is_conversation_shapes: ^0.8.3
-  # path_start.dart takes ObjectId from here, never the client, so the
-  # airlock that imports it reaches no socket code.
-  is_logbook: ^0.2.1
   is_logbook_client: ^0.2.0
   is_shapes: ^0.6.0
 

@@ -20,9 +20,9 @@ import 'package:is_logbook_client/is_logbook_client.dart'
 
 import 'decide.dart';
 import 'decided.dart';
-import 'decision.dart';
-import 'decision_wire.dart';
-import 'reading.dart';
+
+import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
+
 import 'rules.dart';
 
 /// The kinds of entry the record names events by: `event`, and `arrived`,

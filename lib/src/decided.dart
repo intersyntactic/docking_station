@@ -10,8 +10,7 @@ import 'package:is_conversation_shapes/is_conversation_shapes.dart'
 import 'package:is_logbook_client/is_logbook_client.dart' show ObjectId;
 import 'package:is_shapes/is_shapes.dart' show MissionId, TrajectoryId;
 
-import 'decision.dart';
-import 'reading.dart';
+import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
 
 /// Every decision so far, as the questions deciding the next event asks.
 ///

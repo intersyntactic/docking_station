@@ -11,7 +11,7 @@ import 'package:test/test.dart';
 /// The packages path_start.dart may reach: this one, the two it names,
 /// and what they import.
 const _allowed = {
-  'is_docking_station',
+  'is_admission_vocabulary',
   'is_logbook',
   'is_shapes',
   'is_content_id',
@@ -52,7 +52,7 @@ void main() {
       return null;
     }
 
-    final start = libs['is_docking_station']!.resolve('path_start.dart');
+    final start = libs['is_admission_vocabulary']!.resolve('path_start.dart');
     final seen = <Uri>{};
     final reached = <String>{};
     final todo = [start];
@@ -71,7 +71,7 @@ void main() {
     expect(reached.difference(_allowed), isEmpty, reason: '$reached');
     // And within this package, only path_start itself.
     final own = seen
-        .where((f) => packageOf(f) == 'is_docking_station')
+        .where((f) => packageOf(f) == 'is_admission_vocabulary')
         .map((f) => f.pathSegments.last)
         .toSet();
     expect(own, {'path_start.dart'}, reason: '$own');

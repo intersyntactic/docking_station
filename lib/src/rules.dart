@@ -17,8 +17,7 @@ library;
 
 import 'package:checked_json/checked_json.dart' show JsonObject;
 
-import 'decision.dart';
-import 'reading.dart';
+import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
 
 /// Whether an address in an external system whose mission hasn't started
 /// comes in. Asked for the first admissible event of the address a mission
