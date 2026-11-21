@@ -1,20 +1,33 @@
-/// The rules the docking station runs under as a service, for now: a list of
-/// the addresses in external systems let in, the flight rules each mission
-/// they start is admitted under, and every message said starting a turn.
+/// The docking station: how it decides each event ([decide], under the rules
+/// passed in, [DecidesWhichAddressStartsAMission] and [TurnRule];
+/// [DecidedSoFar], what its decisions add up to when read back;
+/// [runDockingStation], which reads the record and sends each decision to
+/// it), and the rules it runs under for now: a list of the addresses in
+/// external systems let in, the flight rules each mission they start is
+/// admitted under, and every message said starting a turn.
 ///
-/// The list and the turn rule stand in for calls still open (Nick, 15 Nov:
-/// for Wednesday a new chat or channel comes in by a rule, not by his yes),
-/// so they stay here, beside the program, and not in the library. Which
+/// The list and the turn rule stand in for calls still open, where a new
+/// chat or channel comes in by a rule rather than by a person's yes. Which
 /// flight rules a mission gets is chosen by the address it is: a channel or
-/// a chat (Nick, 20 Nov).
+/// a chat.
+///
+/// Nothing outside this service imports it. What other repos share with the
+/// docking station is in is_admission_vocabulary.
 library;
 
 import 'dart:convert';
 
 import 'package:checked_json/checked_json.dart'
     show JsonFieldException, JsonObject;
-import 'package:is_docking_station/is_docking_station.dart';
+import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
 import 'package:is_flight_rules/is_flight_rules.dart';
+
+import 'src/rules.dart';
+
+export 'src/decide.dart';
+export 'src/decided.dart';
+export 'src/rules.dart';
+export 'src/run.dart';
 
 /// The addresses in external systems whose missions come in, each under the
 /// flight rules [flightRules] gives its address. A channel on the list lets
@@ -28,7 +41,7 @@ import 'package:is_flight_rules/is_flight_rules.dart';
 /// Read strictly: an unknown key, an address that isn't one, an address
 /// named twice, or an empty list refuses the whole file, since a service
 /// that started with half a list would turn away missions nobody meant to.
-final class AddressesLetIn implements JourneyRule {
+final class AddressesLetIn implements DecidesWhichAddressStartsAMission {
   AddressesLetIn._(this.addresses, this.flightRules)
     : _rulesByAddress = {
         for (final address in addresses)

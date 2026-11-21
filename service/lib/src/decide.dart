@@ -29,7 +29,7 @@ AdmissionDecision decide(
   ObjectId event,
   EventReading? reading,
   DecidedSoFar decided, {
-  required JourneyRule missions,
+  required DecidesWhichAddressStartsAMission missions,
   required TurnRule turns,
 }) {
   const by = DecidedBy.rules;
@@ -163,12 +163,12 @@ AdmissionDecision decide(
 
 /// The mission [first]'s address goes in, with its rules: the
 /// mission of what it sits within (or of itself, when it sits within
-/// nothing) when that has started; a new one when [rule] takes it in; null
+/// nothing) when that has started; a new one when [rule] starts one; null
 /// when it doesn't.
 (MissionPlacement, JsonObject)? _mission(
   AdmissibleEvent first,
   DecidedSoFar decided,
-  JourneyRule rule,
+  DecidesWhichAddressStartsAMission rule,
 ) => switch (decided.missionOf(
   first.containingAddress ?? first.addressInExternalSystem,
 )) {

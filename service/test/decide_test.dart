@@ -5,13 +5,14 @@ import 'dart:convert';
 import 'package:checked_json/checked_json.dart' show JsonObject;
 import 'package:is_conversation_shapes/is_conversation_shapes.dart'
     show SourceMessageId, UserSaid;
-import 'package:is_docking_station/is_docking_station.dart';
+import 'package:docking_station_service/docking_station_service.dart';
+import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
 import 'package:is_logbook_client/is_logbook_client.dart' show ObjectId;
 import 'package:is_shapes/is_shapes.dart'
     show ActorId, DecidedBy, MissionId, TrajectoryId;
 import 'package:test/test.dart';
 
-final class _All implements JourneyRule, TurnRule {
+final class _All implements DecidesWhichAddressStartsAMission, TurnRule {
   @override
   JsonObject takeIn(AdmissibleEvent first) =>
       const JsonObject.of({'tools': 'all'});
@@ -301,7 +302,7 @@ void main() {
 
 /// Takes every mission in, under rules that say how many times it was
 /// asked.
-final class _Counting implements JourneyRule {
+final class _Counting implements DecidesWhichAddressStartsAMission {
   var asked = 0;
 
   @override
