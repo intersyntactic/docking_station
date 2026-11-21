@@ -7,7 +7,8 @@ import 'dart:typed_data';
 import 'package:checked_json/checked_json.dart' show JsonObject;
 import 'package:is_conversation_shapes/is_conversation_shapes.dart'
     show SourceMessageId, UserSaid;
-import 'package:is_docking_station/is_docking_station.dart';
+import 'package:docking_station_service/docking_station_service.dart';
+import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
 import 'package:is_logbook_client/is_logbook_client.dart';
 import 'package:is_shapes/is_shapes.dart' show ActorId, DecidedBy;
 import 'package:test/test.dart';
@@ -192,7 +193,7 @@ final class _Reading implements ModuleReading<int> {
   }
 }
 
-final class _TakesIn implements JourneyRule {
+final class _TakesIn implements DecidesWhichAddressStartsAMission {
   const _TakesIn();
 
   @override

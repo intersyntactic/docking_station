@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'package:docking_station_service/docking_station_service.dart';
 import 'package:is_conversation_shapes/is_conversation_shapes.dart'
     show SourceMessageId, UserSaid;
-import 'package:is_docking_station/is_docking_station.dart';
+import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
 import 'package:is_shapes/is_shapes.dart' show ActorId;
 import 'package:test/test.dart';
 

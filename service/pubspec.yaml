@@ -2,7 +2,7 @@ name: docking_station_service
 description: >-
   The docking station run as a service: it reads the record through the
   logbook's read socket and sends each decision through its write socket.
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/intersyntactic/docking_station
 publish_to: none
 
@@ -11,24 +11,16 @@ environment:
 
 dependencies:
   checked_json: ^0.2.1
-  is_docking_station:
-    path: ..
+  is_admission_vocabulary: ^0.1.0
+  is_conversation_shapes: ^0.8.3
   is_flight_rules: ^0.3.0
   is_logbook_client: ^0.2.0
+  is_shapes: ^0.6.0
   is_teams_module:
     git:
       url: https://github.com/intersyntactic/teams_module.git
-      ref: v0.0.1
-
-dependency_overrides:
-  # is_teams_module takes is_docking_station from pub.dev; pub won't mix a
-  # hosted source and a path source for one package, so the library beside
-  # this package wins.
-  is_docking_station:
-    path: ..
+      ref: cfd90cd
 
 dev_dependencies:
-  is_conversation_shapes: ^0.8.3
-  is_shapes: ^0.6.0
   lints: ^6.1.0
   test: ^1.33.0

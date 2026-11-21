@@ -1,7 +1,6 @@
 /// The docking station as a service: it reads the record through the
 /// logbook's read socket, decides each event, and sends each decision
-/// through the logbook's write socket (RULINGS, "The docking station admits
-/// events under journey paths").
+/// through the logbook's write socket.
 ///
 ///   dart run bin/docking_station.dart
 ///     --read-socket=PATH                   the logbook's read socket
@@ -27,7 +26,6 @@ library;
 import 'dart:io';
 
 import 'package:docking_station_service/docking_station_service.dart';
-import 'package:is_docking_station/is_docking_station.dart';
 import 'package:is_logbook_client/is_logbook_client.dart';
 import 'package:is_teams_module/is_teams_module.dart' show TeamsReading;
 
