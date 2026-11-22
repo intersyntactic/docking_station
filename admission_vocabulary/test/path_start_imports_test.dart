@@ -10,12 +10,7 @@ import 'package:test/test.dart';
 
 /// The packages path_start.dart may reach: this one, the two it names,
 /// and what they import.
-const _allowed = {
-  'is_admission_vocabulary',
-  'is_logbook',
-  'is_shapes',
-  'is_content_id',
-};
+const _allowed = {'is_admission_vocabulary', 'is_shapes', 'is_content_id'};
 
 final _directive = RegExp(
   r'''^\s*(?:import|export|part)\s+['"]([^'"]+)['"]''',

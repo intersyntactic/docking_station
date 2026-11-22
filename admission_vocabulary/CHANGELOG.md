@@ -1,6 +1,18 @@
 Each version is tagged `admission_vocabulary-vX.Y.Z` on the commit it is
 published from.
 
+## 0.2.0
+
+- Depends on the logbook's formats alone: `Kind` from is_logbook_format
+  ^0.1.0 and `ObjectId` from is_content_id ^0.2.0. It no longer depends on
+  is_logbook or is_logbook_client, so nothing that imports it carries the
+  logbook's writer or its socket client. `path_start.dart` now reaches no
+  logbook package at all, and its import-graph test holds that.
+- `DecisionEntryKind.trajectoryClosed` is the logbook's own
+  `Kind.trajectoryClosed`.
+- Breaking only in that `Kind` is now is_logbook_format's class: move to
+  is_logbook_client ^0.3.0 (or is_logbook ^0.3.1), which share it.
+
 ## 0.1.1
 
 - Docs only: the logbook is called the logbook throughout, never "the

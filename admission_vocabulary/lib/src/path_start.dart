@@ -13,7 +13,7 @@ library;
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:is_logbook/is_logbook.dart' show ObjectId;
+import 'package:is_content_id/is_content_id.dart' show ObjectId;
 import 'package:is_shapes/is_shapes.dart'
     show DecidedBy, MissionId, TrajectoryId;
 
