@@ -2,8 +2,8 @@
 
 The docking station is the core piece that lets the outside world into
 trajectories. Something outside, such as Teams, sends bytes unasked. Its
-relay keeps them in the record exactly as they came, as an *event*. The
-docking station reads events from the record in order and decides, for each
+relay keeps them in the logbook exactly as they came, as an *event*. The
+docking station reads events from the logbook in order and decides, for each
 one, whether it comes in and where it goes.
 
 It is the airlock's opposite. The airlock decides what leaves a trajectory
@@ -26,7 +26,7 @@ imports the service. A deploy names a `service-vX.Y.Z` tag.
 
 A module, such as the Teams module, takes part only by giving the docking
 station a *reading* (`ModuleReading`). The docking station hands the reading
-every event from the module's relay, in the record's order. For each one,
+every event from the module's relay, in the logbook's order. For each one,
 the reading says what it is. The docking station never reads a module's
 bytes itself, and the module never learns where anything went. The cases a
 reading names are in `admission_vocabulary/README.md`.
@@ -35,7 +35,7 @@ A reading is a fold. It keeps state of its own, which the docking station
 never looks inside, because some events can only be read with what came
 before. A quoted message's author is known from earlier events, and an edit
 has to be matched to the message it edits. On every start the docking
-station folds again from the record's beginning, so a reading must give the
+station folds again from the logbook's beginning, so a reading must give the
 same answer for the same events in the same order.
 
 ## Missions and trajectories
@@ -65,7 +65,7 @@ Every event is decided exactly once and recorded as one entry, on one chain:
 | `mission-ended` | A mission is over; the logbook closes its chains |
 
 The start entry, `docking-station-set-up`, is written once at setup by
-infra's `record-setup` user, never by the docking station.
+infra's `logbook-setup` user, never by the docking station.
 
 ## What a module never does
 

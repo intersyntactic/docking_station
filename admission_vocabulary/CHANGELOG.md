@@ -1,6 +1,11 @@
 Each version is tagged `admission_vocabulary-vX.Y.Z` on the commit it is
 published from.
 
+## 0.1.1
+
+- Docs only: the logbook is called the logbook throughout, never "the
+  record". No type, name or wire change.
+
 ## 0.1.0
 
 - The vocabulary other repos import to speak with the docking station, split

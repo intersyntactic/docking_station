@@ -68,7 +68,7 @@ MessageSaid _said(String address, {String? containing}) => MessageSaid(
   ),
 );
 
-/// [json] as it would read back from the record.
+/// [json] as it would read back from the logbook.
 Object? _asWritten(Object? json) => jsonDecode(jsonEncode(json));
 
 void main() {

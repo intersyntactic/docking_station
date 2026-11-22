@@ -1,4 +1,4 @@
-/// A decision as the record entry the docking station sends, and back: the
+/// A decision as the logbook entry the docking station sends, and back: the
 /// JSON its class docs give, read strictly, since it is our own wire.
 library;
 

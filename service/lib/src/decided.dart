@@ -1,5 +1,5 @@
 /// What the docking station has decided, rebuilt from its own decisions
-/// alone, read back from the record in order (RULINGS: which address
+/// alone, read back from the logbook in order (RULINGS: which address
 /// is under which trajectory "is rebuilt by reading its own decisions
 /// back, not by working them out again").
 library;
@@ -14,15 +14,15 @@ import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
 
 /// Every decision so far, as the questions deciding the next event asks.
 ///
-/// How it is used: the docking station subscribes to the record's events and
+/// How it is used: the docking station subscribes to the logbook's events and
 /// its own `event-admitted-to-mission` and `event-not-admitted-to-mission`
-/// entries from the record's start. It folds each event through its module's
+/// entries from the logbook's start. It folds each event through its module's
 /// reading and [take]s each decision. At `caught-up` it decides, in order, each
 /// event that has no decision. Those are only ever the last few, because it
 /// records each decision before deciding the next. Then it decides each new
 /// event as it comes. Each decision is sent naming [tip] as previous. A
 /// `not-tip` refusal means another docking station decided first, and its
-/// decision comes on the record to be taken like any other.
+/// decision comes on the logbook to be taken like any other.
 final class DecidedSoFar {
   ObjectId? _tip;
   final _taken = <ObjectId>{};
@@ -81,7 +81,7 @@ final class DecidedSoFar {
   /// starts a trajectory or a mission names it by [entry].
   ///
   /// An entry already taken is ignored, so the docking station's own decision,
-  /// taken when the record accepts it and read back later, can never move
+  /// taken when the logbook accepts it and read back later, can never move
   /// [tip] back.
   void take(ObjectId entry, AdmissionDecision decision) {
     if (!_taken.add(entry)) return;
@@ -113,7 +113,7 @@ final class DecidedSoFar {
     }
   }
 
-  /// Forgets [closed], trajectories whose chains the record now closes, and
+  /// Forgets [closed], trajectories whose chains the logbook now closes, and
   /// the messages admitted under them. Their addresses then start new
   /// trajectories, in the same missions, and a change to a message admitted
   /// before is a change to one never admitted.

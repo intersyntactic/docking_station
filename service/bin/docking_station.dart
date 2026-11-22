@@ -1,6 +1,6 @@
-/// The docking station as a service: it reads the record through the
-/// logbook's read socket, decides each event, and sends each decision
-/// through the logbook's write socket.
+/// The docking station as a service: it reads the logbook through its read
+/// socket, decides each event, and sends each decision through its write
+/// socket.
 ///
 ///   dart run bin/docking_station.dart
 ///     --read-socket=PATH                   the logbook's read socket
@@ -15,10 +15,10 @@
 ///                                          written once at setup
 ///
 /// It exits non-zero whenever the docking station stops, whether it returns
-/// or throws: it should run for as long as the record does, so the service
+/// or throws: it should run for as long as the logbook does, so the service
 /// manager starts it again, and it reads back whatever got in. Except for
 /// what a restart can't change: 64 for bad arguments, 78 for a config or
-/// rules file it can't read, 65 for a record it can't go on from (a second
+/// rules file it can't read, 65 for a logbook it can't go on from (a second
 /// start entry, a decision before the first or one it can't read, a refused
 /// decision).
 library;
@@ -72,7 +72,7 @@ Future<void> main(List<String> arguments) async {
     'docking station: ${addressesLetIn.addresses.length} addresses let in, '
     'start entry of kind $startKind',
   );
-  // A record no restart changes exits 65, which the service manager doesn't
+  // A logbook no restart changes exits 65, which the service manager doesn't
   // restart. Anything else is left uncaught, so the program exits 255 with
   // it printed and is started again: a [StateError] for a decision that may
   // or may not be in, a [ReadFailure] for the read socket gone.
@@ -85,10 +85,10 @@ Future<void> main(List<String> arguments) async {
       missions: addressesLetIn,
       turns: const EverySaidStartsATurn(),
     );
-  } on RecordNoRestartChanges catch (e) {
+  } on LogbookNoRestartChanges catch (e) {
     _abort(e.why, 65);
   }
-  _abort('stopped: the record\'s subscription ended', 1);
+  _abort('stopped: the logbook\'s subscription ended', 1);
 }
 
 /// [path]'s contents as [read] reads them, or exit 78 naming [what].

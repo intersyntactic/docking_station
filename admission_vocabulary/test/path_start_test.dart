@@ -17,7 +17,7 @@ import 'decision_wire_test.dart' show event, readings, rules, said;
 
 final _b = 'b' * 64, _c = 'c' * 64;
 
-/// [decision] as the record holds it: the header its ids are hashed with,
+/// [decision] as the logbook holds it: the header its ids are hashed with,
 /// then its body.
 Uint8List _entry(AdmissionDecision decision, {String previous = '-'}) {
   final (kind, body) = encodeDecision(decision);

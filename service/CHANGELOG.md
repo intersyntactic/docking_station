@@ -10,6 +10,9 @@ deploy names the tag.
 - Takes the readings and decisions from is_admission_vocabulary 0.1.0 on
   pub.dev, like every other reader, with no path override. Pins teams_module
   v0.0.2, which imports the same.
+- The logbook is called the logbook throughout: `RecordNoRestartChanges` is
+  `LogbookNoRestartChanges`, and the stop message says "the logbook's
+  subscription ended". The start entry's writer is infra's `logbook-setup`.
 - No change to what it decides or writes.
 
 ## 0.1.0

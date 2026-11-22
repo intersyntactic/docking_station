@@ -3,14 +3,14 @@
 What other parts of intersyntactic import to speak with the docking station,
 and nothing of how it decides.
 
-The docking station reads events from the record in order and decides, for
+The docking station reads events from the logbook in order and decides, for
 each, whether it comes into a mission and on which trajectory. Two sides
 need its words without needing its engine:
 
 - **A module**, such as the Teams module, describes each event its relay
   recorded. It implements `ModuleReading`, a fold over `RelayedEvent`s, and
   gives an `EventReading` for each.
-- **A reader of the record**, such as loop_launcher, agent_loop or the
+- **A reader of the logbook**, such as loop_launcher, agent_loop or the
   airlock, reads the decisions the docking station recorded.
 
 So this package holds exactly those words and their encoding in the logbook.

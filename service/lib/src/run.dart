@@ -1,4 +1,4 @@
-/// Running the docking station: reading the record, deciding each event,
+/// Running the docking station: reading the logbook, deciding each event,
 /// and sending each decision to it.
 library;
 
@@ -24,31 +24,31 @@ import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
 
 import 'rules.dart';
 
-/// The kinds of entry the record names events by: `event`, and `arrived`,
+/// The kinds of entry the logbook names events by: `event`, and `arrived`,
 /// which entries recorded before the rename keep for good, since an entry's
 /// kind is part of the bytes its hash is taken from (Nick, 16 Nov: "It's an
 /// event, not an arrival").
 final _eventKinds = {Kind.parse('event')!, Kind.parse('arrived')!};
 
 /// Why [runDockingStation] stopped, when starting it again would stop it the
-/// same way: the record holds, or refuses, something no restart changes,
+/// same way: the logbook holds, or refuses, something no restart changes,
 /// such as a second start entry or a decision it can't read.
-final class RecordNoRestartChanges implements Exception {
-  const RecordNoRestartChanges(this.why);
+final class LogbookNoRestartChanges implements Exception {
+  const LogbookNoRestartChanges(this.why);
 
   final String why;
 
   @override
-  String toString() => 'RecordNoRestartChanges: $why';
+  String toString() => 'LogbookNoRestartChanges: $why';
 }
 
 /// Runs the docking station until [subscribe]'s stream ends, which it never
-/// should: the caller treats a return as the record going away.
+/// should: the caller treats a return as the logbook going away.
 ///
-/// It reads the record from its start, subscribing with [subscribe] to its
+/// It reads the logbook from its start, subscribing with [subscribe] to its
 /// events, its decisions and its start entry, the one entry of [startKind].
 /// Each event is read by the one of [readings] for its source, in the
-/// record's order, and each decision is taken into a [DecidedSoFar]. Once
+/// logbook's order, and each decision is taken into a [DecidedSoFar]. Once
 /// the subscription has caught up, each event after the start entry with no
 /// decision is decided under [missions] and [turns], in order, and sent with
 /// [send], naming the decision before it as previous, or the start entry for
@@ -65,15 +65,15 @@ final class RecordNoRestartChanges implements Exception {
 /// is a call not made (one start entry, intersyntactic-a8 and this
 /// session's lean, 16 Nov; the open questions hold it).
 ///
-/// When the record answers [AlreadyRecorded], these exact bytes are in, so
+/// When the logbook answers [AlreadyRecorded], these exact bytes are in, so
 /// this decision is, after the same tip, whoever sent them: it is taken as
 /// if [Written]. When it answers [NotTip], the decisions' chain has moved on:
 /// another docking station decided first, and its decision comes on the
-/// record to be taken like any other. A failed add, or no answer, stops it
+/// logbook to be taken like any other. A failed add, or no answer, stops it
 /// with a [StateError]: the decision may or may not be in, and deciding on
 /// regardless could admit an event twice; started again, it reads back
 /// whatever got in. A refusal for some other reason, such as a sender table
-/// that doesn't allow the kind, stops it with a [RecordNoRestartChanges], as
+/// that doesn't allow the kind, stops it with a [LogbookNoRestartChanges], as
 /// do a second start entry, a decision before the first, and an entry it
 /// can't read: starting again would meet each the same way.
 Future<void> runDockingStation({
@@ -112,11 +112,11 @@ Future<void> runDockingStation({
   // The start entry, once it has come.
   ObjectId? start;
   // Each event after the start entry read but not yet decided, with its
-  // reading, in the record's order.
+  // reading, in the logbook's order.
   final waiting = <ObjectId, EventReading?>{};
 
   // Decides each waiting event in order. Returns early when another
-  // docking station has decided first: its decisions come on the record.
+  // docking station has decided first: its decisions come on the logbook.
   Future<void> decideWaiting(ObjectId start) async {
     while (waiting.isNotEmpty) {
       final MapEntry(key: event, value: reading) = waiting.entries.first;
@@ -132,7 +132,7 @@ Future<void> runDockingStation({
       final entry = switch (await send(kind, body, previous: previous)) {
         Written(:final entry) || AlreadyRecorded(:final entry) => entry,
         NotTip() => null,
-        WriteRefused(:final why) => throw RecordNoRestartChanges(
+        WriteRefused(:final why) => throw LogbookNoRestartChanges(
           'the decision on ${event.hex} was refused: $why',
         ),
         WriteFailed(:final why) || Unanswered(:final why) => throw StateError(
@@ -160,20 +160,20 @@ Future<void> runDockingStation({
         if (start != null) waiting[id] = reading;
       case Entry(:final id, :final kind) when kind == startKind:
         if (start != null) {
-          throw RecordNoRestartChanges(
+          throw LogbookNoRestartChanges(
             'a second start entry ${id.hex}, after ${start.hex}',
           );
         }
         start = id;
       case Entry(:final id, :final kind):
         if (start == null) {
-          throw RecordNoRestartChanges(
+          throw LogbookNoRestartChanges(
             'the decision ${id.hex} is before any start',
           );
         }
         final decision =
             decodeDecision(kind, item.body) ??
-            (throw RecordNoRestartChanges(
+            (throw LogbookNoRestartChanges(
               'cannot read the decision ${id.hex}',
             ));
         decided.take(id, decision);
