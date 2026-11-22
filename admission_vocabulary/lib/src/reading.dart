@@ -287,9 +287,9 @@ final class ShownMessageJudged extends AdmissibleEvent {
 }
 
 /// [from] asked to close the trajectory [addressInExternalSystem] is under,
-/// on [message], such as the Close button on the card the agent posts when a
-/// trajectory starts. Anyone at the address may ask, and nothing of it goes
-/// to the agent.
+/// on [message], such as Teams' "Close trajectory" action on any message, or
+/// the Close button on the card the agent posts when a trajectory starts.
+/// Anyone at the address may ask, and nothing of it goes to the agent.
 ///
 /// The trajectory is found by the address, not by [message], since the
 /// message asked on is one the agent sent, and those are never admitted.
