@@ -1,4 +1,4 @@
-// What the docking station sends a record, and when: against a record kept in
+// What the docking station sends a logbook, and when: against a logbook kept in
 // memory the way the logbook service keeps one.
 import 'dart:async';
 import 'dart:convert';
@@ -20,12 +20,12 @@ final chat = AddressInExternalSystem.parse('test:chat')!;
 /// name, so the runner is given it.
 const _startKind = 'test-start';
 
-/// A record in memory: entries in order, a subscription that sends the
+/// A logbook in memory: entries in order, a subscription that sends the
 /// backlog, then caught-up, then each new entry, and one chain of decisions
 /// whose tip a sent decision must name as previous, as the logbook service
 /// checks. It starts with its start entry, unless [started] is false.
-final class _Record {
-  _Record({bool started = true}) {
+final class _Logbook {
+  _Logbook({bool started = true}) {
     if (started) start();
   }
 
@@ -208,21 +208,21 @@ final class _EverySaid implements TurnRule {
   bool startsTurn(MessageSaid said, AdmittedPlacement placement) => true;
 }
 
-Future<void> _run(_Record record, _Reading reading) => runDockingStation(
-  subscribe: record.subscribe,
-  send: record.send,
+Future<void> _run(_Logbook logbook, _Reading reading) => runDockingStation(
+  subscribe: logbook.subscribe,
+  send: logbook.send,
   startKind: Kind.parse(_startKind)!,
   readings: [reading],
   missions: const _TakesIn(),
   turns: const _EverySaid(),
 );
 
-/// Runs the docking station on [record] until it has done all it can, then
-/// ends the record and waits for it to finish.
-Future<void> _runToEnd(_Record record, _Reading reading) async {
-  final running = _run(record, reading);
+/// Runs the docking station on [logbook] until it has done all it can, then
+/// ends the logbook and waits for it to finish.
+Future<void> _runToEnd(_Logbook logbook, _Reading reading) async {
+  final running = _run(logbook, reading);
   await pumpEventQueue();
-  await record.close();
+  await logbook.close();
   await running;
 }
 
@@ -249,14 +249,14 @@ EventAdmittedToMission _startsChat(ObjectId event, String key) =>
 void main() {
   test('once caught up, decides each waiting event, each naming the '
       'one before', () async {
-    final record = _Record();
-    final a = record.recordEvent({'said': 'hello', 'key': 'a'});
-    final b = record.recordEvent({'said': 'again', 'key': 'b'});
-    await _runToEnd(record, _Reading());
+    final logbook = _Logbook();
+    final a = logbook.recordEvent({'said': 'hello', 'key': 'a'});
+    final b = logbook.recordEvent({'said': 'again', 'key': 'b'});
+    await _runToEnd(logbook, _Reading());
 
-    final [(firstPrevious, first), (secondPrevious, second)] = record.sent;
-    final [firstEntry, _] = record.decisionEntries;
-    expect(firstPrevious, record.startEntry);
+    final [(firstPrevious, first), (secondPrevious, second)] = logbook.sent;
+    final [firstEntry, _] = logbook.decisionEntries;
+    expect(firstPrevious, logbook.startEntry);
     expect(first.event, a.id);
     expect(first.by, DecidedBy.rules);
     expect(
@@ -277,17 +277,17 @@ void main() {
     );
   });
 
-  test('takes the decisions in the record, and decides only what is left, '
+  test('takes the decisions in the logbook, and decides only what is left, '
       'reading every event', () async {
-    final record = _Record();
+    final logbook = _Logbook();
     final reading = _Reading();
-    final a = record.recordEvent({'said': 'hello', 'key': 'a'});
-    record.decideElsewhere(_startsChat(a.id, 'a'));
-    final b = record.recordEvent({'said': 'again', 'key': 'b'});
-    await _runToEnd(record, reading);
+    final a = logbook.recordEvent({'said': 'hello', 'key': 'a'});
+    logbook.decideElsewhere(_startsChat(a.id, 'a'));
+    final b = logbook.recordEvent({'said': 'again', 'key': 'b'});
+    await _runToEnd(logbook, reading);
 
-    final aDecision = record.decisionEntries.first;
-    final [(previous, decision)] = record.sent;
+    final aDecision = logbook.decisionEntries.first;
+    final [(previous, decision)] = logbook.sent;
     expect(reading.given, [a.id, b.id]);
     expect(previous, aDecision);
     expect(decision.event, b.id);
@@ -300,28 +300,28 @@ void main() {
   });
 
   test('decides an event that comes after catching up, as it comes', () async {
-    final record = _Record();
-    final running = _run(record, _Reading());
+    final logbook = _Logbook();
+    final running = _run(logbook, _Reading());
     await pumpEventQueue();
-    expect(record.sent, isEmpty);
+    expect(logbook.sent, isEmpty);
 
-    final c = record.recordEvent({'said': 'late', 'key': 'c'});
+    final c = logbook.recordEvent({'said': 'late', 'key': 'c'});
     await pumpEventQueue();
-    await record.close();
+    await logbook.close();
     await running;
 
-    final [(_, decision)] = record.sent;
+    final [(_, decision)] = logbook.sent;
     expect(decision.event, c.id);
-    expect(record.decisions.map((d) => d.event), [c.id]);
+    expect(logbook.decisions.map((d) => d.event), [c.id]);
   });
 
   test('when another docking station decided first, takes its decision and '
       'sends nothing more', () async {
-    final record = _Record();
-    final a0 = record.recordEvent({'said': 'hello', 'key': 'a0'});
-    record.decideElsewhere(_startsChat(a0.id, 'a0'));
-    final a = record.recordEvent({'said': 'again', 'key': 'a'});
-    record.beforeNextSend = () => record.decideElsewhere(
+    final logbook = _Logbook();
+    final a0 = logbook.recordEvent({'said': 'hello', 'key': 'a0'});
+    logbook.decideElsewhere(_startsChat(a0.id, 'a0'));
+    final a = logbook.recordEvent({'said': 'again', 'key': 'a'});
+    logbook.beforeNextSend = () => logbook.decideElsewhere(
       SaidStartsNoTurn(
         a.id,
         by: DecidedBy.rules,
@@ -329,18 +329,18 @@ void main() {
         key: EventKey.parse('a')!,
       ),
     );
-    await _runToEnd(record, _Reading());
+    await _runToEnd(logbook, _Reading());
 
-    expect(record.sent, hasLength(1));
-    expect(record.decisions.map((d) => d.event), [a0.id, a.id]);
-    expect(record.decisions.last, isA<SaidStartsNoTurn>());
+    expect(logbook.sent, hasLength(1));
+    expect(logbook.decisions.map((d) => d.event), [a0.id, a.id]);
+    expect(logbook.decisions.last, isA<SaidStartsNoTurn>());
   });
 
   for (final (what, answer, stops) in [
     (
       'a refusal',
       const WriteRefused('kind-not-allowed event-admitted-to-mission'),
-      isA<RecordNoRestartChanges>(),
+      isA<LogbookNoRestartChanges>(),
     ),
     // The decision may be in: started again, it reads back whatever got in.
     ('a failed add', const WriteFailed('disk full'), isA<StateError>()),
@@ -351,45 +351,45 @@ void main() {
     ),
   ]) {
     test('$what, rather than not-tip, stops it', () async {
-      final record = _Record();
-      final a0 = record.recordEvent({'said': 'hello', 'key': 'a0'});
-      record.decideElsewhere(_startsChat(a0.id, 'a0'));
-      record.recordEvent({'said': 'again', 'key': 'a'});
-      record.answer = answer;
+      final logbook = _Logbook();
+      final a0 = logbook.recordEvent({'said': 'hello', 'key': 'a0'});
+      logbook.decideElsewhere(_startsChat(a0.id, 'a0'));
+      logbook.recordEvent({'said': 'again', 'key': 'a'});
+      logbook.answer = answer;
 
-      await expectLater(_run(record, _Reading()), throwsA(stops));
-      expect(record.decisions, hasLength(1));
-      await record.close();
+      await expectLater(_run(logbook, _Reading()), throwsA(stops));
+      expect(logbook.decisions, hasLength(1));
+      await logbook.close();
     });
   }
 
   test('a decision it cannot read stops it', () async {
-    final record = _Record();
-    record.add(
+    final logbook = _Logbook();
+    logbook.add(
       'event-admitted-to-mission',
       null,
       utf8.encode('{"not": "a decision"}'),
     );
 
     await expectLater(
-      _run(record, _Reading()),
-      throwsA(isA<RecordNoRestartChanges>()),
+      _run(logbook, _Reading()),
+      throwsA(isA<LogbookNoRestartChanges>()),
     );
-    await record.close();
+    await logbook.close();
   });
 
   test(
     'an event from a source no reading takes is not admitted, unread',
     () async {
-      final record = _Record();
-      final x = record.recordEvent({
+      final logbook = _Logbook();
+      final x = logbook.recordEvent({
         'said': 'hi',
         'key': 'x',
       }, source: 'elsewhere');
       final reading = _Reading();
-      await _runToEnd(record, reading);
+      await _runToEnd(logbook, reading);
 
-      final [(_, decision)] = record.sent;
+      final [(_, decision)] = logbook.sent;
       expect(decision, isA<NoReadingForSource>());
       expect(decision.event, x.id);
       expect(reading.given, isEmpty);
@@ -397,106 +397,106 @@ void main() {
   );
 
   test('reads an event recorded before the rename, as `arrived`', () async {
-    final record = _Record();
+    final logbook = _Logbook();
     final reading = _Reading();
-    final old = record.recordEvent({
+    final old = logbook.recordEvent({
       'said': 'hello',
       'key': 'a',
     }, kind: 'arrived');
-    final now = record.recordEvent({'said': 'again', 'key': 'b'});
-    await _runToEnd(record, reading);
+    final now = logbook.recordEvent({'said': 'again', 'key': 'b'});
+    await _runToEnd(logbook, reading);
 
     expect(reading.given, [old.id, now.id]);
-    expect(record.decisions.map((d) => d.event), [old.id, now.id]);
+    expect(logbook.decisions.map((d) => d.event), [old.id, now.id]);
   });
 
   test('an event before the start entry is read but never decided, and the '
       'first decision names the start entry', () async {
-    final record = _Record(started: false);
+    final logbook = _Logbook(started: false);
     final reading = _Reading();
-    final before = record.recordEvent({'said': 'test', 'key': 'a'});
-    final start = record.start();
-    final after = record.recordEvent({'said': 'real', 'key': 'b'});
-    await _runToEnd(record, reading);
+    final before = logbook.recordEvent({'said': 'test', 'key': 'a'});
+    final start = logbook.start();
+    final after = logbook.recordEvent({'said': 'real', 'key': 'b'});
+    await _runToEnd(logbook, reading);
 
     expect(reading.given, [before.id, after.id]);
-    final [(previous, decision)] = record.sent;
+    final [(previous, decision)] = logbook.sent;
     expect(previous, start.id);
     expect(decision.event, after.id);
   });
 
   test('with no start entry, decides nothing until one comes', () async {
-    final record = _Record(started: false);
-    record.recordEvent({'said': 'test', 'key': 'a'});
-    final running = _run(record, _Reading());
+    final logbook = _Logbook(started: false);
+    logbook.recordEvent({'said': 'test', 'key': 'a'});
+    final running = _run(logbook, _Reading());
     await pumpEventQueue();
-    expect(record.sent, isEmpty);
+    expect(logbook.sent, isEmpty);
 
-    final start = record.start();
-    final after = record.recordEvent({'said': 'real', 'key': 'b'});
+    final start = logbook.start();
+    final after = logbook.recordEvent({'said': 'real', 'key': 'b'});
     await pumpEventQueue();
-    await record.close();
+    await logbook.close();
     await running;
 
-    final [(previous, decision)] = record.sent;
+    final [(previous, decision)] = logbook.sent;
     expect(previous, start.id);
     expect(decision.event, after.id);
   });
 
   test('when two docking stations make the first decision at once, the '
       'second takes the first one\'s', () async {
-    final record = _Record();
-    final a = record.recordEvent({'said': 'hello', 'key': 'a'});
-    record.beforeNextSend = () =>
-        record.decideElsewhere(_startsChat(a.id, 'a'));
-    await _runToEnd(record, _Reading());
+    final logbook = _Logbook();
+    final a = logbook.recordEvent({'said': 'hello', 'key': 'a'});
+    logbook.beforeNextSend = () =>
+        logbook.decideElsewhere(_startsChat(a.id, 'a'));
+    await _runToEnd(logbook, _Reading());
 
     // Its own first decision named the start entry, as the other's did,
-    // so the record refused it rather than starting a second chain.
-    expect(record.sent, hasLength(1));
-    expect(record.decisions.map((d) => d.event), [a.id]);
+    // so the logbook refused it rather than starting a second chain.
+    expect(logbook.sent, hasLength(1));
+    expect(logbook.decisions.map((d) => d.event), [a.id]);
   });
 
   test('a decision whose exact bytes are already in is taken as written, '
       'and the next names it', () async {
-    final record = _Record();
-    final a = record.recordEvent({'said': 'hello', 'key': 'a'});
-    record.sameBytesFirst = true;
-    final running = _run(record, _Reading());
+    final logbook = _Logbook();
+    final a = logbook.recordEvent({'said': 'hello', 'key': 'a'});
+    logbook.sameBytesFirst = true;
+    final running = _run(logbook, _Reading());
     await pumpEventQueue();
-    final b = record.recordEvent({'said': 'again', 'key': 'b'});
+    final b = logbook.recordEvent({'said': 'again', 'key': 'b'});
     await pumpEventQueue();
-    await record.close();
+    await logbook.close();
     await running;
 
     // Recorded once, not twice, and the docking station went on.
-    expect(record.decisions.map((d) => d.event), [a.id, b.id]);
-    final [_, (previous, _)] = record.sent;
-    expect(previous, record.decisionEntries.first);
+    expect(logbook.decisions.map((d) => d.event), [a.id, b.id]);
+    final [_, (previous, _)] = logbook.sent;
+    expect(previous, logbook.decisionEntries.first);
   });
 
   test('a second start entry stops it', () async {
-    final record = _Record();
-    record.start();
+    final logbook = _Logbook();
+    logbook.start();
 
     await expectLater(
-      _run(record, _Reading()),
-      throwsA(isA<RecordNoRestartChanges>()),
+      _run(logbook, _Reading()),
+      throwsA(isA<LogbookNoRestartChanges>()),
     );
-    await record.close();
+    await logbook.close();
   });
 
   test('a decision before the start entry stops it', () async {
-    final record = _Record(started: false);
-    final a = record.recordEvent({'said': 'hello', 'key': 'a'});
-    record.decideElsewhere(_startsChat(a.id, 'a'));
-    record.start();
+    final logbook = _Logbook(started: false);
+    final a = logbook.recordEvent({'said': 'hello', 'key': 'a'});
+    logbook.decideElsewhere(_startsChat(a.id, 'a'));
+    logbook.start();
 
     await expectLater(
-      _run(record, _Reading()),
-      throwsA(isA<RecordNoRestartChanges>()),
+      _run(logbook, _Reading()),
+      throwsA(isA<LogbookNoRestartChanges>()),
     );
-    await record.close();
+    await logbook.close();
   });
 
   test('the start entry\'s kind is no event\'s or decision\'s', () async {
@@ -507,11 +507,11 @@ void main() {
       'event-not-admitted-to-mission',
       'mission-ended',
     ]) {
-      final record = _Record();
+      final logbook = _Logbook();
       await expectLater(
         runDockingStation(
-          subscribe: record.subscribe,
-          send: record.send,
+          subscribe: logbook.subscribe,
+          send: logbook.send,
           startKind: Kind.parse(kind)!,
           readings: [_Reading()],
           missions: const _TakesIn(),

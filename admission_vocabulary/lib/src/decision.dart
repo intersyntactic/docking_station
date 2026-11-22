@@ -1,4 +1,4 @@
-/// What the docking station decides about each event, each sent to the record
+/// What the docking station decides about each event, each sent to the logbook
 /// as an entry of its own (RULINGS, "The docking station admits events under
 /// trajectories").
 ///
@@ -9,14 +9,14 @@
 /// is one it had not reached, never one it turned away, so a reading or a rule
 /// changed since cannot admit an old event it once kept out.
 ///
-/// The decisions are one chain in the record, each naming the one before it
-/// as previous. The record refuses an entry whose previous is not its
+/// The decisions are one chain in the logbook, each naming the one before it
+/// as previous. The logbook refuses an entry whose previous is not its
 /// chain's tip, so two docking stations that each believe they hold the
 /// chain cannot both decide one event: the second is refused, reads the
 /// first one's decision back, and goes on. "None is admitted twice" is the
-/// record's guarantee, not a set one process keeps. It holds for the first
+/// logbook's guarantee, not a set one process keeps. It holds for the first
 /// decision too, since its previous is the start entry rather than none: the
-/// record starts a new chain for any entry with no previous, so two docking
+/// logbook starts a new chain for any entry with no previous, so two docking
 /// stations making a first decision with none would start two.
 ///
 /// Each decision holds what it was decided on (the address, the
@@ -35,7 +35,7 @@ import 'package:is_shapes/is_shapes.dart'
 import 'reading.dart';
 
 /// The kinds of entry the docking station sends, one per event. Its user's
-/// row in the record's sender table allows these four and nothing else.
+/// row in the logbook's sender table allows these four and nothing else.
 abstract final class DecisionEntryKind {
   /// An [EventAdmittedToMission]'s kind.
   static final eventAdmittedToMission = Kind.parse(
@@ -121,7 +121,7 @@ final class StartsMission extends MissionPlacement {
 }
 
 /// What the docking station decided about the event recorded at [event], and
-/// [by] whom, so the record tells "the rules let it through" from "the
+/// [by] whom, so the logbook tells "the rules let it through" from "the
 /// person said yes", as the airlock's does.
 ///
 /// Every entry says who, as `"by": <who>`, where `<who>` is `rules` or
@@ -235,7 +235,7 @@ final class EventAdmittedToMission extends AdmissionDecision {
 }
 
 /// [mission] ended, at [event]: its loops stop, its programs close and its
-/// users are freed (loop_launcher), and the record takes nothing more on its
+/// users are freed (loop_launcher), and the logbook takes nothing more on its
 /// trajectories' chains (is_logbook). The person's next message in it opens it
 /// again, on a new trajectory (RULINGS).
 ///
@@ -254,7 +254,7 @@ final class MissionEnded extends AdmissionDecision {
 
 /// [trajectory], in [mission], closed at [event], because a person asked
 /// ([reading]): its loop stops and its users are freed (loop_launcher), and
-/// the record takes nothing more on its chains (is_logbook). The next
+/// the logbook takes nothing more on its chains (is_logbook). The next
 /// message at its address starts a new trajectory, in the same mission.
 ///
 /// Anyone at the address may close it (Nick, 18 Nov), so it is decided

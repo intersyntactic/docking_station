@@ -1,6 +1,6 @@
 /// Reading an `event-admitted-to-mission` entry for the trajectory it starts
 /// and that trajectory's rules, and nothing else: for the airlock, which
-/// enforces each trajectory's rules and learns them from the record (RULINGS,
+/// enforces each trajectory's rules and learns them from the logbook (RULINGS,
 /// "the loop launcher records itself").
 ///
 /// The entry's `reading` is what strangers sent, made into a node. The
@@ -60,7 +60,7 @@ final class UnreadableTrajectoryEntry<R> extends AdmittedTrajectoryEntry<R> {
   String toString() => 'UnreadableTrajectoryEntry: $why';
 }
 
-/// The record entry [entry] (its bytes as the record holds them, the
+/// The logbook entry [entry] (its bytes as the logbook holds them, the
 /// `<kind>\n<previous>\n` header included, which its ids are hashes of),
 /// read for the trajectory it starts. [rules] reads the rules from their
 /// JSON, null when they aren't rules.

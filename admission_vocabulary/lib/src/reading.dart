@@ -2,7 +2,7 @@
 /// gives.
 ///
 /// A module takes part only by describing. The docking station hands its
-/// [ModuleReading] every event from the module's relay, in the record's
+/// [ModuleReading] every event from the module's relay, in the logbook's
 /// order, and for each the reading says what it is: a [EventReading]. The
 /// docking station never reads a module's bytes itself, and the module never
 /// learns which trajectory anything went to.
@@ -77,12 +77,12 @@ final class RelayedEvent {
 
 /// A module's reading of its relay's events, as a fold: the docking station
 /// starts from [start] and calls [step] with each event from [source], in
-/// the record's order, keeping only the state it returns.
+/// the logbook's order, keeping only the state it returns.
 ///
 /// [S] is the module's own, and the docking station never looks inside it. It
 /// is there for what a reading needs from earlier events: a quote's
 /// author, the message an edit or delete is of, who an earlier join brought
-/// in. On every start the docking station folds again from the record's
+/// in. On every start the docking station folds again from the logbook's
 /// beginning, already-admitted events included, so [step] must give the
 /// same answer for the same events in the same order, and must not change
 /// the state it is given.

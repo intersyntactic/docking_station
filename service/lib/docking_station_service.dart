@@ -1,7 +1,7 @@
 /// The docking station: how it decides each event ([decide], under the rules
 /// passed in, [DecidesWhichAddressStartsAMission] and [TurnRule];
 /// [DecidedSoFar], what its decisions add up to when read back;
-/// [runDockingStation], which reads the record and sends each decision to
+/// [runDockingStation], which reads the logbook and sends each decision to
 /// it), and the rules it runs under for now: a list of the addresses in
 /// external systems let in, the flight rules each mission they start is
 /// admitted under, and every message said starting a turn.

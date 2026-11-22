@@ -1,5 +1,5 @@
 // What [decide] makes of events against what [DecidedSoFar] holds, without a
-// record: the questions one decision asks of the ones before it.
+// logbook: the questions one decision asks of the ones before it.
 import 'dart:convert';
 
 import 'package:checked_json/checked_json.dart' show JsonObject;

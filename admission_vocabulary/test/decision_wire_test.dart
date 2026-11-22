@@ -1,4 +1,4 @@
-// The decision entry is a wire contract: whatever reads the record reads
+// The decision entry is a wire contract: whatever reads the logbook reads
 // these field names. So this is kept (RULINGS, "Tests prove once": the
 // suite keeps wire contracts).
 import 'dart:convert';
@@ -137,7 +137,7 @@ void main() {
   // A round trip can't catch a renamed word, since the writer and the
   // reader rename together. These are the words already promised to
   // infra's sender rows, loop_launcher and the airlock (Nick, 17 Nov).
-  test('the record words are the ones Nick chose', () {
+  test('the logbook words are the ones Nick chose', () {
     expect(DecisionEntryKind.all.map((kind) => kind.name), {
       'event-admitted-to-mission',
       'event-not-admitted-to-mission',

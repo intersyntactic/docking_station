@@ -29,7 +29,7 @@ engine moved into the service (`service/CHANGELOG.md`).
 
 ## 0.1.0
 
-- First release on pub.dev. Reads events from the record in order and writes
+- First release on pub.dev. Reads events from the logbook in order and writes
   one decision for each: admitted to a mission (starting a trajectory, on one,
   or into a mission), not admitted, or the mission ended.
 - `readTrajectoryStart` in `path_start.dart`, the airlock's narrow reader of a

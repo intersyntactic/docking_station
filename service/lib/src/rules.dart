@@ -9,7 +9,7 @@
 /// goes under its address's trajectory, since what it judges was shown
 /// there.
 ///
-/// A rule is asked at most once per event, in the record's order, and what
+/// A rule is asked at most once per event, in the logbook's order, and what
 /// it answered is kept in the decision, never asked again on a restart. So
 /// a rule can change between restarts without changing anything it already
 /// decided.
