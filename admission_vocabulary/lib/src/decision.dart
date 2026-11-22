@@ -143,8 +143,7 @@ sealed class AdmissionDecision {
 ///     {"event": <hex>, "by": <who>, "reading": <reading>,
 ///      ...the placement, "rules": <rules>?, "startsTurn": <bool>?}
 ///
-/// `<reading>` is the whole reading, as [encodeReading] writes it (Nick,
-/// 16 Nov: the entry that admits it carries the reading), so whatever hands
+/// `<reading>` is the whole reading, as [encodeReading] writes it, so whatever hands
 /// the event to its trajectory's crux reads the node from the decision, and
 /// never reads a module's bytes. The placement is `"trajectory": <id>` for
 /// [OnTrajectory]; `"startsTrajectory": true` and the mission for
@@ -257,7 +256,7 @@ final class MissionEnded extends AdmissionDecision {
 /// the logbook takes nothing more on its chains (is_logbook). The next
 /// message at its address starts a new trajectory, in the same mission.
 ///
-/// Anyone at the address may close it (Nick, 18 Nov), so it is decided
+/// Anyone at the address may close it, so it is decided
 /// [DecidedBy.rules], and [reading] says who asked.
 ///
 /// The entry, of kind `trajectory-closed`:

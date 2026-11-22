@@ -136,8 +136,8 @@ void main() {
 
   // A round trip can't catch a renamed word, since the writer and the
   // reader rename together. These are the words already promised to
-  // infra's sender rows, loop_launcher and the airlock (Nick, 17 Nov).
-  test('the logbook words are the ones Nick chose', () {
+  // infra's sender rows, loop_launcher and the airlock.
+  test('the logbook words are the ones promised to their readers', () {
     expect(DecisionEntryKind.all.map((kind) => kind.name), {
       'event-admitted-to-mission',
       'event-not-admitted-to-mission',

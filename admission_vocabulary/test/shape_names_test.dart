@@ -1,7 +1,7 @@
 // A node's `shape` is one namespace across every package whose nodes travel
 // in map form, so two packages naming two shapes alike would make one
 // node read as the other. The docking station decodes nodes from several
-// packages, so it checks (Nick, 16 Nov). Kept: it guards a wire contract
+// packages, so it checks. Kept: it guards a wire contract
 // across packages, which nothing else checks.
 import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
 import 'package:test/test.dart';

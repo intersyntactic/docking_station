@@ -20,8 +20,7 @@ import 'package:is_shapes/is_shapes.dart' show ActorId;
 
 /// One event, as the docking station gives it to a reading: its entry's hash,
 /// and what its relay recorded, `{"at", "source", "bytes"}`, as an entry of
-/// kind `event`, or `arrived` if it was recorded before the rename (Nick,
-/// 16 Nov: "It's an event, not an arrival").
+/// kind `event`, or `arrived` if it was recorded before that kind was named.
 ///
 /// Only [RelayedEvent.read] makes one, from the entry's body as recorded.
 final class RelayedEvent {
@@ -167,8 +166,8 @@ sealed class AdmissibleEvent extends AddressedEvent {
 /// trajectory's rules.
 ///
 /// The reading builds [node] because only its fold holds what that takes,
-/// such as who wrote a message it quotes (Nick, 2026-11-15: the reading
-/// carries the node). Someone the module can't name has said nothing it
+/// such as who wrote a message it quotes. Someone the module can't name has
+/// said nothing it
 /// can admit, since a [UserSaid] always has an author.
 final class MessageSaid extends AdmissibleEvent {
   const MessageSaid({
@@ -193,8 +192,8 @@ final class MessageSaid extends AdmissibleEvent {
 /// [change] says. It is matched to the event that said [message].
 ///
 /// It is admitted whoever made it. Whether it counts is for whatever reads
-/// it: a change counts only when [from] is who said [message] (Nick, 16
-/// Nov, the rule `Withdrawal` keeps).
+/// it: a change counts only when [from] is who said [message], the rule
+/// `Withdrawal` keeps.
 final class MessageChanged extends AdmissibleEvent {
   const MessageChanged({
     required super.addressInExternalSystem,
@@ -258,8 +257,7 @@ final class ActorsJoinedAddress extends AdmissibleEvent {
 }
 
 /// A person's [verdict] on [to], something the agent showed them, such as
-/// Approve, Not yet or a proposed correction on a card (Nick, 2026-11-15;
-/// named `Judged`, then `ShownMessageJudged`, 16 Nov). Named for what the
+/// Approve, Not yet or a proposed correction on a card. Named for what the
 /// person said, not for the button, so a Slack button reads the same.
 ///
 /// It names the message, never a turn: the trajectory's crux builds the
