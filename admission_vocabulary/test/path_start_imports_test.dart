@@ -1,5 +1,5 @@
 // The airlock is the trusted base, and imports path_start.dart so that what
-// strangers sent is never decoded in it (airlock-api-04 and Nick, 16 Nov).
+// strangers sent is never decoded in it.
 // That holds only while nothing path_start.dart reaches, in this package or
 // any other, imports the packages that decode it. This walks the whole
 // graph, so it is a check and not a hope.

@@ -19,7 +19,7 @@ import 'reading.dart';
 /// Every node shape a reading can carry, by the field it travels in, as
 /// each node's package names them. A `shape` is one namespace across every
 /// package whose nodes travel in map form, so no two of these may share a
-/// name (Nick, 16 Nov: the docking station checks names).
+/// name, and the docking station checks that none do.
 const readingNodeShapes = <String, Set<String>>{
   'node': {UserSaid.shapeName},
   'change': WhatChanged.shapeNames,

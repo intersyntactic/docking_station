@@ -4,7 +4,11 @@ published from.
 ## 0.1.1
 
 - Docs only: the logbook is called the logbook throughout, never "the
-  record". No type, name or wire change.
+  record", and `PersonAskedToCloseTrajectory` names both ways a close is
+  asked: the "Close trajectory" action on any message, and the Close button
+  on the agent's card. Comments say what the code does, with no dated
+  rulings or attributions. One test is renamed to "the logbook words are
+  the ones promised to their readers". No type, name or wire change.
 
 ## 0.1.0
 
