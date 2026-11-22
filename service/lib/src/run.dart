@@ -1,6 +1,5 @@
 /// Running the docking station: reading the record, deciding each event,
-/// and sending each decision to it (RULINGS, "The docking station admits
-/// events under journey paths").
+/// and sending each decision to it.
 library;
 
 import 'package:is_logbook_client/is_logbook_client.dart'
@@ -87,7 +86,7 @@ Future<void> runDockingStation({
   send,
   required Kind startKind,
   required Iterable<ModuleReading<Object?>> readings,
-  required JourneyRule missions,
+  required DecidesWhichAddressStartsAMission missions,
   required TurnRule turns,
 }) async {
   final folds = <String, _Fold<Object?>>{};
