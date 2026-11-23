@@ -5,15 +5,15 @@ import 'package:checked_json/checked_json.dart' show JsonObject;
 import 'package:is_logbook_client/is_logbook_client.dart' show ObjectId;
 import 'package:is_shapes/is_shapes.dart' show DecidedBy;
 
-import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
+import 'package:is_docking_station_api/is_docking_station_api.dart';
 
 import 'decided.dart';
 import 'rules.dart';
 
-/// What the docking station decides about the event recorded at [event], read
-/// by its module's reading as [reading], given everything [decided] so
-/// far. [reading] is null when no reading takes the event's source, or its
-/// body is not what a relay records.
+/// What the docking station decides about the event recorded at [event],
+/// translated by its module's translator as [translated], given everything
+/// [decided] so far. [translated] is null when no translator takes the
+/// event's source, or its body is not what a relay records.
 ///
 /// In order: an event whose key was decided already is a [DuplicateEvent]. A
 /// close closes its address's trajectory. A change goes where the message it
@@ -27,20 +27,20 @@ import 'rules.dart';
 /// person.
 AdmissionDecision decide(
   ObjectId event,
-  EventReading? reading,
+  TranslatedEvent? translated,
   DecidedSoFar decided, {
   required DecidesWhichAddressStartsAMission missions,
   required TurnRule turns,
 }) {
   const by = DecidedBy.rules;
   final AddressedEvent addressed;
-  switch (reading) {
+  switch (translated) {
     case null:
-      return NoReadingForSource(event, by: by);
+      return NoTranslatorForSource(event, by: by);
     case NothingToAdmit():
-      return ReadingFoundNothing(event, by: by);
+      return TranslatorFoundNothing(event, by: by);
     case AddressedEvent():
-      addressed = reading;
+      addressed = translated;
   }
   final AddressedEvent(:addressInExternalSystem, :key) = addressed;
   if (decided.decidedAt(addressInExternalSystem, key) case final first?) {
@@ -55,22 +55,25 @@ AdmissionDecision decide(
 
   final AdmissibleEvent admissible;
   switch (addressed) {
+    // The trajectory the close names, only while it is the one open at the
+    // close's address: an old reply's close names a trajectory since closed,
+    // and one from elsewhere names another address's.
+    case PersonAskedToCloseTrajectory(:final trajectory)
+        when decided.trajectoryOf(addressInExternalSystem) == trajectory:
+      return TrajectoryClosedBecausePersonAsked(
+        event,
+        by: by,
+        translatedEvent: addressed,
+        trajectory: trajectory,
+        mission: decided.missionOfTrajectory(trajectory),
+      );
     case PersonAskedToCloseTrajectory():
-      return switch (decided.trajectoryOf(addressInExternalSystem)) {
-        final trajectory? => TrajectoryClosedBecausePersonAsked(
-          event,
-          by: by,
-          reading: addressed,
-          trajectory: trajectory,
-          mission: decided.missionOfTrajectory(trajectory),
-        ),
-        null => CloseAskedAtAddressWithNoTrajectory(
-          event,
-          by: by,
-          addressInExternalSystem: addressInExternalSystem,
-          key: key,
-        ),
-      };
+      return CloseAskedForTrajectoryNotOpenAtAddress(
+        event,
+        by: by,
+        addressInExternalSystem: addressInExternalSystem,
+        key: key,
+      );
     case AdmissibleEvent():
       admissible = addressed;
   }
@@ -82,7 +85,7 @@ AdmissionDecision decide(
   }) => EventAdmittedToMission(
     event,
     by: by,
-    reading: admissible,
+    translatedEvent: admissible,
     placement: placement,
     rules: rules,
     startsTurn: startsTurn,

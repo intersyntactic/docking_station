@@ -6,7 +6,7 @@ import 'package:checked_json/checked_json.dart' show JsonObject;
 import 'package:is_conversation_shapes/is_conversation_shapes.dart'
     show SourceMessageId, UserSaid;
 import 'package:docking_station_service/docking_station_service.dart';
-import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
+import 'package:is_docking_station_api/is_docking_station_api.dart';
 import 'package:is_logbook_client/is_logbook_client.dart' show ObjectId;
 import 'package:is_shapes/is_shapes.dart'
     show ActorId, DecidedBy, MissionId, TrajectoryId;
@@ -37,6 +37,7 @@ void main() {
       addressInExternalSystem: AddressInExternalSystem.parse('test:chat')!,
       containingAddress: null,
       addressedTo: null,
+      replyEndpoint: null,
       key: EventKey.parse('message:1')!,
       node: UserSaid(
         author: ActorId.parse('teams:t/p')!,
@@ -74,6 +75,7 @@ void main() {
           addressInExternalSystem: chat,
           containingAddress: null,
           addressedTo: null,
+          replyEndpoint: null,
           key: EventKey.parse(key)!,
           node: UserSaid(
             author: ActorId.parse('teams:t/p')!,
@@ -115,6 +117,7 @@ void main() {
       )!,
       containingAddress: channel,
       addressedTo: null,
+      replyEndpoint: null,
       key: EventKey.parse(key)!,
       node: UserSaid(
         author: ActorId.parse('teams:t/p')!,
@@ -169,6 +172,7 @@ void main() {
       )!,
       containingAddress: channel,
       addressedTo: null,
+      replyEndpoint: null,
       key: EventKey.parse(key)!,
       node: UserSaid(
         author: ActorId.parse('teams:t/p')!,
@@ -227,10 +231,10 @@ void main() {
     AddressInExternalSystem thread(String t) =>
         AddressInExternalSystem.parse('test:channel;$t')!;
     final decided = DecidedSoFar();
-    AdmissionDecision step(String key, AddressedEvent reading) {
+    AdmissionDecision step(String key, AddressedEvent translated) {
       final decision = decide(
         _hash(key),
-        reading,
+        translated,
         decided,
         missions: _All(),
         turns: _All(),
@@ -245,6 +249,7 @@ void main() {
         addressInExternalSystem: thread(t),
         containingAddress: channel,
         addressedTo: null,
+        replyEndpoint: null,
         key: EventKey.parse(key)!,
         node: UserSaid(
           author: ActorId.parse('teams:t/p')!,
@@ -253,41 +258,57 @@ void main() {
         ),
       ),
     );
-    AdmissionDecision close(String t, String key) => step(
+    TrajectoryId started(String key) =>
+        TrajectoryId.parse(_hash('decision $key').hex)!;
+    // A close pressed on a reply sent in the trajectory [startedBy] started.
+    AdmissionDecision close(
+      String t,
+      String key, {
+      required String startedBy,
+    }) => step(
       key,
       PersonAskedToCloseTrajectory(
         addressInExternalSystem: thread(t),
         containingAddress: channel,
         addressedTo: null,
+        replyEndpoint: null,
         from: ActorId.parse('teams:t/q')!,
         key: EventKey.parse(key)!,
-        message: SourceMessageId.parse('$t|card')!,
+        message: SourceMessageId.parse('$t|reply')!,
+        trajectory: started(startedBy),
       ),
     );
-    TrajectoryId started(String key) =>
-        TrajectoryId.parse(_hash('decision $key').hex)!;
 
     say('t1', 'a');
     final mission = MissionId.parse(_hash('decision a').hex)!;
     say('t2', 'b');
 
     expect(
-      close('t1', 'c'),
+      close('t2', 'x', startedBy: 'a'),
+      isA<CloseAskedForTrajectoryNotOpenAtAddress>(),
+      reason: "another address's trajectory",
+    );
+    expect(
+      close('t1', 'c', startedBy: 'a'),
       isA<TrajectoryClosedBecausePersonAsked>()
           .having((c) => c.trajectory, 'trajectory', started('a'))
           .having((c) => c.mission, 'mission', mission)
-          .having((c) => c.reading.from.value, 'who asked', 'teams:t/q'),
+          .having(
+            (c) => c.translatedEvent.from.value,
+            'who asked',
+            'teams:t/q',
+          ),
     );
     expect(
       (say('t2', 'd') as EventAdmittedToMission).placement,
       isA<OnTrajectory>().having((p) => p.trajectory, 'the same', started('b')),
     );
     expect(
-      close('t1', 'e'),
-      isA<CloseAskedAtAddressWithNoTrajectory>(),
+      close('t1', 'e', startedBy: 'a'),
+      isA<CloseAskedForTrajectoryNotOpenAtAddress>(),
       reason: 'closed already',
     );
-    expect(close('t1', 'c'), isA<DuplicateEvent>());
+    expect(close('t1', 'c', startedBy: 'a'), isA<DuplicateEvent>());
     expect(
       (say('t1', 'f') as EventAdmittedToMission).placement,
       isA<StartsTrajectory>().having(
@@ -296,7 +317,24 @@ void main() {
         isA<InMission>().having((m) => m.mission, 'mission', mission),
       ),
     );
-    expect(close('t3', 'g'), isA<CloseAskedAtAddressWithNoTrajectory>());
+    expect(
+      close('t1', 'h', startedBy: 'a'),
+      isA<CloseAskedForTrajectoryNotOpenAtAddress>(),
+      reason: "an old reply's close leaves the trajectory open now",
+    );
+    expect(
+      close('t1', 'i', startedBy: 'f'),
+      isA<TrajectoryClosedBecausePersonAsked>().having(
+        (c) => c.trajectory,
+        'trajectory',
+        started('f'),
+      ),
+    );
+    expect(
+      close('t3', 'g', startedBy: 'a'),
+      isA<CloseAskedForTrajectoryNotOpenAtAddress>(),
+      reason: 'nothing open there',
+    );
   });
 }
 

@@ -20,14 +20,9 @@ import 'package:is_logbook_client/is_logbook_client.dart'
 import 'decide.dart';
 import 'decided.dart';
 
-import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
+import 'package:is_docking_station_api/is_docking_station_api.dart';
 
 import 'rules.dart';
-
-/// The kinds of entry the logbook names events by: `event`, and `arrived`,
-/// which entries recorded before the rename keep for good, since an entry's
-/// kind is part of the bytes its hash is taken from.
-final _eventKinds = {Kind.parse('event')!, Kind.parse('arrived')!};
 
 /// Why [runDockingStation] stopped, when starting it again would stop it the
 /// same way: the logbook holds, or refuses, something no restart changes,
@@ -44,10 +39,11 @@ final class LogbookNoRestartChanges implements Exception {
 /// Runs the docking station until [subscribe]'s stream ends, which it never
 /// should: the caller treats a return as the logbook going away.
 ///
-/// It reads the logbook from its start, subscribing with [subscribe] to its
-/// events, its decisions and its start entry, the one entry of [startKind].
-/// Each event is read by the one of [readings] for its source, in the
-/// logbook's order, and each decision is taken into a [DecidedSoFar]. Once
+/// It reads the logbook from its start, subscribing with [subscribe] to the
+/// events of its [translators]' sources, each the entries of that source's
+/// kind, its decisions and its start entry, the one entry of [startKind].
+/// Each event is translated by the one of [translators] for its source, in
+/// the logbook's order, and each decision is taken into a [DecidedSoFar]. Once
 /// the subscription has caught up, each event after the start entry with no
 /// decision is decided under [missions] and [turns], in order, and sent with
 /// [send], naming the decision before it as previous, or the start entry for
@@ -56,8 +52,8 @@ final class LogbookNoRestartChanges implements Exception {
 ///
 /// The start entry is written once, at setup, by whoever sets the docking
 /// station up, never by the docking station: two of them starting at once
-/// would each write one. An event before it is read, so a reading learns
-/// from its history, but never decided. With no start entry yet, nothing is
+/// would each write one. An event before it is translated, so a translator
+/// learns from its history, but never decided. With no start entry yet, nothing is
 /// decided until one comes. A second start entry, or a decision before the
 /// first, stops it: there is one start entry, and nothing resets what was
 /// decided.
@@ -82,22 +78,27 @@ Future<void> runDockingStation({
   })
   send,
   required Kind startKind,
-  required Iterable<ModuleReading<Object?>> readings,
+  required Iterable<TranslatesRelayedEvents<Object?>> translators,
   required DecidesWhichAddressStartsAMission missions,
   required TurnRule turns,
 }) async {
-  final folds = <String, _Fold<Object?>>{};
-  for (final reading in readings) {
-    if (folds.containsKey(reading.source)) {
+  final bySource = <RelayedEventSource, _TranslatorWithState<Object?>>{};
+  for (final translator in translators) {
+    if (bySource.containsKey(translator.source)) {
       throw ArgumentError.value(
-        reading.source,
-        'readings',
-        'two readings for one source',
+        translator.source,
+        'translators',
+        'two translators for one source',
       );
     }
-    folds[reading.source] = _Fold(reading);
+    bySource[translator.source] = _TranslatorWithState(translator);
   }
-  if (_eventKinds.contains(startKind) ||
+  // Only its translators' sources' events: the sender table lets one relay
+  // write each kind, so no other kind can carry an event it should take.
+  // A translator added later is given its source's events from the start
+  // entry on, since none of them were subscribed to before.
+  final eventKinds = {for (final source in bySource.keys) source.kind};
+  if (RelayedEventSource.ofKind(startKind) != null ||
       DecisionEntryKind.all.contains(startKind)) {
     throw ArgumentError.value(
       startKind,
@@ -109,17 +110,17 @@ Future<void> runDockingStation({
   // The start entry, once it has come.
   ObjectId? start;
   // Each event after the start entry read but not yet decided, with its
-  // reading, in the logbook's order.
-  final waiting = <ObjectId, EventReading?>{};
+  // translation, in the logbook's order.
+  final waiting = <ObjectId, TranslatedEvent?>{};
 
   // Decides each waiting event in order. Returns early when another
   // docking station has decided first: its decisions come on the logbook.
   Future<void> decideWaiting(ObjectId start) async {
     while (waiting.isNotEmpty) {
-      final MapEntry(key: event, value: reading) = waiting.entries.first;
+      final MapEntry(key: event, value: translated) = waiting.entries.first;
       final decision = decide(
         event,
-        reading,
+        translated,
         decided,
         missions: missions,
         turns: turns,
@@ -143,18 +144,18 @@ Future<void> runDockingStation({
   }
 
   var caughtUp = false;
-  final kinds = {..._eventKinds, ...DecisionEntryKind.all, startKind};
+  final kinds = {...eventKinds, ...DecisionEntryKind.all, startKind};
   await for (final item in subscribe(kinds)) {
     switch (item) {
-      case Entry(:final id, :final kind) when _eventKinds.contains(kind):
-        // Read whether or not it is decided, so a reading learns from the
-        // events before the start entry too.
-        final event = RelayedEvent.read(id, item.body);
-        final reading = switch (event) {
-          final event? => folds[event.source]?.step(event),
+      case Entry(:final id, :final kind) when eventKinds.contains(kind):
+        // Translated whether or not it is decided, so a translator learns
+        // from the events before the start entry too.
+        final event = RelayedEvent.read(id, kind, item.body);
+        final translated = switch (event) {
+          final event? => bySource[event.source]?.step(event),
           null => null,
         };
-        if (start != null) waiting[id] = reading;
+        if (start != null) waiting[id] = translated;
       case Entry(:final id, :final kind) when kind == startKind:
         if (start != null) {
           throw LogbookNoRestartChanges(
@@ -182,17 +183,17 @@ Future<void> runDockingStation({
   }
 }
 
-/// One module's reading, folded: it keeps the state the reading returned
-/// last, and gives each event to the reading with it.
-final class _Fold<S> {
-  _Fold(this._reading) : _state = _reading.start;
+/// One module's translator, with the state it returned last, which it is
+/// given with each event.
+final class _TranslatorWithState<S> {
+  _TranslatorWithState(this._translator) : _state = _translator.start;
 
-  final ModuleReading<S> _reading;
+  final TranslatesRelayedEvents<S> _translator;
   S _state;
 
-  EventReading step(RelayedEvent event) {
-    final (state, reading) = _reading.step(_state, event);
+  TranslatedEvent step(RelayedEvent event) {
+    final (state, translated) = _translator.step(_state, event);
     _state = state;
-    return reading;
+    return translated;
   }
 }

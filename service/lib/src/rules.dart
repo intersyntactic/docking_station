@@ -17,7 +17,7 @@ library;
 
 import 'package:checked_json/checked_json.dart' show JsonObject;
 
-import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
+import 'package:is_docking_station_api/is_docking_station_api.dart';
 
 /// Whether an address in an external system with no mission yet starts one,
 /// and the rules it starts under. Asked about the outermost address, the one

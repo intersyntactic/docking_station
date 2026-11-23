@@ -153,14 +153,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.0"
-  is_admission_vocabulary:
-    dependency: "direct main"
-    description:
-      name: is_admission_vocabulary
-      sha256: d91f8246cf4a71512e24867a27a78495787db7d498e848e900e02fa8f1d420a7
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.0"
   is_annotation_shapes:
     dependency: transitive
     description:
@@ -185,22 +177,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.8.3"
+  is_docking_station_api:
+    dependency: "direct main"
+    description:
+      name: is_docking_station_api
+      sha256: cf10508402a18f108db6dffe132852d2d5e3eb6fe0562aef6cddd7d039bc8c79
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.0"
   is_effects:
     dependency: transitive
     description:
       name: is_effects
-      sha256: a9bedb77f620bc711fa81a817c7fbfce0028c567a87cfbc63a2a023d9acd74bd
+      sha256: "95b051e592edb4e04241e89be3ac1500c0abaf58fdec8e64f40a2cbe7a7ebfc7"
       url: "https://pub.dev"
     source: hosted
-    version: "0.12.0"
+    version: "0.14.2"
   is_flight_rules:
     dependency: "direct main"
     description:
       name: is_flight_rules
-      sha256: ee717fe2c470fc6ec50649352988c76e5a564dffca2964218a8c9ee4a1922a06
+      sha256: ccca6da45d07ee5689f19707abfe19c1e534fb6636b097a58aa3527d65ee9799
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "0.5.0"
   is_logbook_client:
     dependency: "direct main"
     description:
@@ -237,11 +237,19 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v0.0.2"
-      resolved-ref: "6213d8760b9309e17c6a286e2942f70bf91ef9eb"
+      ref: "v0.0.5"
+      resolved-ref: b94271212cda5d42811e1a2436c379facfd6b51a
       url: "https://github.com/intersyntactic/teams_module.git"
     source: git
-    version: "0.0.2"
+    version: "0.0.5"
+  is_web_address_vocabulary:
+    dependency: transitive
+    description:
+      name: is_web_address_vocabulary
+      sha256: "232241a06a2871213e110f52f01c8c68b6c98fdcdf00fcfb491c8e24d10d8dac"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.1"
   lints:
     dependency: "direct dev"
     description:

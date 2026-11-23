@@ -8,7 +8,7 @@ import 'package:checked_json/checked_json.dart' show JsonObject;
 import 'package:is_conversation_shapes/is_conversation_shapes.dart'
     show SourceMessageId, UserSaid;
 import 'package:docking_station_service/docking_station_service.dart';
-import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
+import 'package:is_docking_station_api/is_docking_station_api.dart';
 import 'package:is_logbook_client/is_logbook_client.dart';
 import 'package:is_shapes/is_shapes.dart' show ActorId, DecidedBy, TrajectoryId;
 import 'package:test/test.dart';
@@ -89,23 +89,16 @@ final class _Logbook {
     return entry;
   }
 
-  /// An event from [source], whose bytes are [what] as JSON, recorded as an
-  /// entry of [kind].
-  Entry recordEvent(
-    Map<String, Object?> what, {
-    String source = 'test',
-    String kind = 'event',
-  }) => add(
-    kind,
-    null,
-    utf8.encode(
-      jsonEncode({
-        'at': '2026-11-16T00:00:00Z',
-        'source': source,
-        'bytes': base64Encode(utf8.encode(jsonEncode(what))),
-      }),
-    ),
-  );
+  /// An event from [source], whose bytes are [what] as JSON, recorded as
+  /// its relay records it.
+  Entry recordEvent(Map<String, Object?> what, {String source = 'test'}) {
+    final (kind, body) = encodeRelayedEvent(
+      RelayedEventSource.parse(source)!,
+      at: DateTime.utc(2026, 11, 16),
+      bytes: Uint8List.fromList(utf8.encode(jsonEncode(what))),
+    );
+    return add(kind.name, null, body);
+  }
 
   /// The start entry, as setup writes it: with no previous, and the first
   /// thing a decision names as previous.
@@ -169,17 +162,17 @@ final class _Logbook {
 /// Reads an event's bytes, `{"said": <text>, "key": <key>}`, as [ann]
 /// saying it in [chat]; anything else as nothing to admit. Keeps which
 /// events it was given, in order.
-final class _Reading implements ModuleReading<int> {
+final class _Translator implements TranslatesRelayedEvents<int> {
   final given = <ObjectId>[];
 
   @override
-  String get source => 'test';
+  RelayedEventSource get source => RelayedEventSource.parse('test')!;
 
   @override
   int get start => 0;
 
   @override
-  (int, EventReading) step(int state, RelayedEvent event) {
+  (int, TranslatedEvent) step(int state, RelayedEvent event) {
     given.add(event.entry);
     final what = jsonDecode(utf8.decode(event.bytes)) as Map<String, Object?>;
     if (what case {'said': final String text, 'key': final String key}) {
@@ -189,6 +182,7 @@ final class _Reading implements ModuleReading<int> {
           addressInExternalSystem: chat,
           containingAddress: null,
           addressedTo: null,
+          replyEndpoint: null,
           key: EventKey.parse(key)!,
           node: UserSaid(
             author: ann,
@@ -217,19 +211,20 @@ final class _EverySaid implements TurnRule {
   bool startsTurn(MessageSaid said, AdmittedPlacement placement) => true;
 }
 
-Future<void> _run(_Logbook logbook, _Reading reading) => runDockingStation(
-  subscribe: logbook.subscribe,
-  send: logbook.send,
-  startKind: Kind.parse(_startKind)!,
-  readings: [reading],
-  missions: const _TakesIn(),
-  turns: const _EverySaid(),
-);
+Future<void> _run(_Logbook logbook, _Translator translator) =>
+    runDockingStation(
+      subscribe: logbook.subscribe,
+      send: logbook.send,
+      startKind: Kind.parse(_startKind)!,
+      translators: [translator],
+      missions: const _TakesIn(),
+      turns: const _EverySaid(),
+    );
 
 /// Runs the docking station on [logbook] until it has done all it can, then
 /// ends the logbook and waits for it to finish.
-Future<void> _runToEnd(_Logbook logbook, _Reading reading) async {
-  final running = _run(logbook, reading);
+Future<void> _runToEnd(_Logbook logbook, _Translator translator) async {
+  final running = _run(logbook, translator);
   await pumpEventQueue();
   await logbook.close();
   await running;
@@ -239,10 +234,11 @@ EventAdmittedToMission _startsChat(ObjectId event, String key) =>
     EventAdmittedToMission(
       event,
       by: DecidedBy.rules,
-      reading: MessageSaid(
+      translatedEvent: MessageSaid(
         addressInExternalSystem: chat,
         containingAddress: null,
         addressedTo: null,
+        replyEndpoint: null,
         key: EventKey.parse(key)!,
         node: UserSaid(
           author: ann,
@@ -261,7 +257,7 @@ void main() {
     final logbook = _Logbook();
     final a = logbook.recordEvent({'said': 'hello', 'key': 'a'});
     final b = logbook.recordEvent({'said': 'again', 'key': 'b'});
-    await _runToEnd(logbook, _Reading());
+    await _runToEnd(logbook, _Translator());
 
     final [(firstPrevious, first), (secondPrevious, second)] = logbook.sent;
     final [firstEntry, _] = logbook.decisionEntries;
@@ -287,17 +283,17 @@ void main() {
   });
 
   test('takes the decisions in the logbook, and decides only what is left, '
-      'reading every event', () async {
+      'translating every event', () async {
     final logbook = _Logbook();
-    final reading = _Reading();
+    final translator = _Translator();
     final a = logbook.recordEvent({'said': 'hello', 'key': 'a'});
     logbook.decideElsewhere(_startsChat(a.id, 'a'));
     final b = logbook.recordEvent({'said': 'again', 'key': 'b'});
-    await _runToEnd(logbook, reading);
+    await _runToEnd(logbook, translator);
 
     final aDecision = logbook.decisionEntries.first;
     final [(previous, decision)] = logbook.sent;
-    expect(reading.given, [a.id, b.id]);
+    expect(translator.given, [a.id, b.id]);
     expect(previous, aDecision);
     expect(decision.event, b.id);
     expect(
@@ -310,7 +306,7 @@ void main() {
 
   test('decides an event that comes after catching up, as it comes', () async {
     final logbook = _Logbook();
-    final running = _run(logbook, _Reading());
+    final running = _run(logbook, _Translator());
     await pumpEventQueue();
     expect(logbook.sent, isEmpty);
 
@@ -338,7 +334,7 @@ void main() {
         key: EventKey.parse('a')!,
       ),
     );
-    await _runToEnd(logbook, _Reading());
+    await _runToEnd(logbook, _Translator());
 
     expect(logbook.sent, hasLength(1));
     expect(logbook.decisions.map((d) => d.event), [a0.id, a.id]);
@@ -366,7 +362,7 @@ void main() {
       logbook.recordEvent({'said': 'again', 'key': 'a'});
       logbook.answer = answer;
 
-      await expectLater(_run(logbook, _Reading()), throwsA(stops));
+      await expectLater(_run(logbook, _Translator()), throwsA(stops));
       expect(logbook.decisions, hasLength(1));
       await logbook.close();
     });
@@ -381,54 +377,56 @@ void main() {
     );
 
     await expectLater(
-      _run(logbook, _Reading()),
+      _run(logbook, _Translator()),
       throwsA(isA<LogbookNoRestartChanges>()),
     );
     await logbook.close();
   });
 
-  test(
-    'an event from a source no reading takes is not admitted, unread',
-    () async {
-      final logbook = _Logbook();
-      final x = logbook.recordEvent({
-        'said': 'hi',
-        'key': 'x',
-      }, source: 'elsewhere');
-      final reading = _Reading();
-      await _runToEnd(logbook, reading);
-
-      final [(_, decision)] = logbook.sent;
-      expect(decision, isA<NoReadingForSource>());
-      expect(decision.event, x.id);
-      expect(reading.given, isEmpty);
-    },
-  );
-
-  test('reads an event recorded before the rename, as `arrived`', () async {
+  test('an event from a source no translator takes is never received, so '
+      'never decided', () async {
     final logbook = _Logbook();
-    final reading = _Reading();
-    final old = logbook.recordEvent({
-      'said': 'hello',
-      'key': 'a',
-    }, kind: 'arrived');
-    final now = logbook.recordEvent({'said': 'again', 'key': 'b'});
-    await _runToEnd(logbook, reading);
+    logbook.recordEvent({'said': 'hi', 'key': 'x'}, source: 'elsewhere');
+    final translator = _Translator();
+    await _runToEnd(logbook, translator);
 
-    expect(reading.given, [old.id, now.id]);
-    expect(logbook.decisions.map((d) => d.event), [old.id, now.id]);
+    expect(logbook.sent, isEmpty);
+    expect(translator.given, isEmpty);
+  });
+
+  test('an event whose body names its own source is not admitted, '
+      'untranslated', () async {
+    final logbook = _Logbook();
+    final x = logbook.add(
+      'test-event',
+      null,
+      utf8.encode(
+        jsonEncode({
+          'at': '2026-11-16T00:00:00Z',
+          'source': 'test',
+          'bytes': base64Encode(utf8.encode('{"said":"hi","key":"x"}')),
+        }),
+      ),
+    );
+    final translator = _Translator();
+    await _runToEnd(logbook, translator);
+
+    final [(_, decision)] = logbook.sent;
+    expect(decision, isA<NoTranslatorForSource>());
+    expect(decision.event, x.id);
+    expect(translator.given, isEmpty);
   });
 
   test('an event before the start entry is read but never decided, and the '
       'first decision names the start entry', () async {
     final logbook = _Logbook(started: false);
-    final reading = _Reading();
+    final translator = _Translator();
     final before = logbook.recordEvent({'said': 'test', 'key': 'a'});
     final start = logbook.start();
     final after = logbook.recordEvent({'said': 'real', 'key': 'b'});
-    await _runToEnd(logbook, reading);
+    await _runToEnd(logbook, translator);
 
-    expect(reading.given, [before.id, after.id]);
+    expect(translator.given, [before.id, after.id]);
     final [(previous, decision)] = logbook.sent;
     expect(previous, start.id);
     expect(decision.event, after.id);
@@ -437,7 +435,7 @@ void main() {
   test('with no start entry, decides nothing until one comes', () async {
     final logbook = _Logbook(started: false);
     logbook.recordEvent({'said': 'test', 'key': 'a'});
-    final running = _run(logbook, _Reading());
+    final running = _run(logbook, _Translator());
     await pumpEventQueue();
     expect(logbook.sent, isEmpty);
 
@@ -458,7 +456,7 @@ void main() {
     final a = logbook.recordEvent({'said': 'hello', 'key': 'a'});
     logbook.beforeNextSend = () =>
         logbook.decideElsewhere(_startsChat(a.id, 'a'));
-    await _runToEnd(logbook, _Reading());
+    await _runToEnd(logbook, _Translator());
 
     // Its own first decision named the start entry, as the other's did,
     // so the logbook refused it rather than starting a second chain.
@@ -471,7 +469,7 @@ void main() {
     final logbook = _Logbook();
     final a = logbook.recordEvent({'said': 'hello', 'key': 'a'});
     logbook.sameBytesFirst = true;
-    final running = _run(logbook, _Reading());
+    final running = _run(logbook, _Translator());
     await pumpEventQueue();
     final b = logbook.recordEvent({'said': 'again', 'key': 'b'});
     await pumpEventQueue();
@@ -489,7 +487,7 @@ void main() {
     logbook.start();
 
     await expectLater(
-      _run(logbook, _Reading()),
+      _run(logbook, _Translator()),
       throwsA(isA<LogbookNoRestartChanges>()),
     );
     await logbook.close();
@@ -502,7 +500,7 @@ void main() {
     logbook.start();
 
     await expectLater(
-      _run(logbook, _Reading()),
+      _run(logbook, _Translator()),
       throwsA(isA<LogbookNoRestartChanges>()),
     );
     await logbook.close();
@@ -510,8 +508,8 @@ void main() {
 
   test('the start entry\'s kind is no event\'s or decision\'s', () async {
     for (final kind in [
-      'event',
-      'arrived',
+      'test-event',
+      'teams-event',
       'event-admitted-to-mission',
       'event-not-admitted-to-mission',
       'mission-ended',
@@ -522,7 +520,7 @@ void main() {
           subscribe: logbook.subscribe,
           send: logbook.send,
           startKind: Kind.parse(kind)!,
-          readings: [_Reading()],
+          translators: [_Translator()],
           missions: const _TakesIn(),
           turns: const _EverySaid(),
         ),
@@ -550,7 +548,7 @@ void main() {
     test('closes it while the docking station runs, which reads the close '
         'back and starts a new trajectory at its address', () async {
       final logbook = _Logbook();
-      final running = _run(logbook, _Reading());
+      final running = _run(logbook, _Translator());
       logbook.recordEvent({'said': 'hello', 'key': 'a'});
       await pumpEventQueue();
       final started = TrajectoryId.parse(logbook.decisionEntries.single.hex)!;

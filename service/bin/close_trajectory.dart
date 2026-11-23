@@ -23,7 +23,7 @@ library;
 import 'dart:io';
 
 import 'package:docking_station_service/docking_station_service.dart';
-import 'package:is_admission_vocabulary/is_admission_vocabulary.dart'
+import 'package:is_docking_station_api/is_docking_station_api.dart'
     show OperatorName;
 import 'package:is_logbook_client/is_logbook_client.dart';
 import 'package:is_shapes/is_shapes.dart' show TrajectoryId;

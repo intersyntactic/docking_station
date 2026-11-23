@@ -10,14 +10,14 @@ import 'package:is_conversation_shapes/is_conversation_shapes.dart'
 import 'package:is_logbook_client/is_logbook_client.dart' show ObjectId;
 import 'package:is_shapes/is_shapes.dart' show MissionId, TrajectoryId;
 
-import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
+import 'package:is_docking_station_api/is_docking_station_api.dart';
 
 /// Every decision so far, as the questions deciding the next event asks.
 ///
 /// How it is used: the docking station subscribes to the logbook's events and
 /// its own `event-admitted-to-mission` and `event-not-admitted-to-mission`
-/// entries from the logbook's start. It folds each event through its module's
-/// reading and [take]s each decision. At `caught-up` it decides, in order, each
+/// entries from the logbook's start. It gives each event to its module's
+/// translator and [take]s each decision. At `caught-up` it decides, in order, each
 /// event that has no decision. Those are only ever the last few, because it
 /// records each decision before deciding the next. Then it decides each new
 /// event as it comes. Each decision is sent naming [tip] as previous. A
@@ -110,15 +110,19 @@ final class DecidedSoFar {
             if (of == mission) trajectory,
         });
       case TrajectoryClosedBecausePersonAsked(
-        :final reading,
+        :final translatedEvent,
         :final trajectory,
         :final event,
       ):
-        _events[(reading.addressInExternalSystem, reading.key)] = event;
+        _events[(
+              translatedEvent.addressInExternalSystem,
+              translatedEvent.key,
+            )] =
+            event;
         _forget({trajectory});
       case TrajectoryClosedByOperator(:final trajectory):
         _forget({trajectory});
-      case NoReadingForSource() || ReadingFoundNothing():
+      case NoTranslatorForSource() || TranslatorFoundNothing():
         break;
     }
   }
