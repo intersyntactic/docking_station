@@ -26,8 +26,7 @@ import 'rules.dart';
 
 /// The kinds of entry the logbook names events by: `event`, and `arrived`,
 /// which entries recorded before the rename keep for good, since an entry's
-/// kind is part of the bytes its hash is taken from (Nick, 16 Nov: "It's an
-/// event, not an arrival").
+/// kind is part of the bytes its hash is taken from.
 final _eventKinds = {Kind.parse('event')!, Kind.parse('arrived')!};
 
 /// Why [runDockingStation] stopped, when starting it again would stop it the
@@ -57,13 +56,11 @@ final class LogbookNoRestartChanges implements Exception {
 ///
 /// The start entry is written once, at setup, by whoever sets the docking
 /// station up, never by the docking station: two of them starting at once
-/// would each write one (Nick, 16 Nov: leave events from before the first
-/// run undecided). An event before it is read, so a reading learns from
-/// its history, but never decided. With no start entry yet, nothing is
-/// decided until one comes. A second start entry, or a decision before
-/// the first, stops it: a later start entry that reset what was decided
-/// is a call not made (one start entry, intersyntactic-a8 and this
-/// session's lean, 16 Nov; the open questions hold it).
+/// would each write one. An event before it is read, so a reading learns
+/// from its history, but never decided. With no start entry yet, nothing is
+/// decided until one comes. A second start entry, or a decision before the
+/// first, stops it: there is one start entry, and nothing resets what was
+/// decided.
 ///
 /// When the logbook answers [AlreadyRecorded], these exact bytes are in, so
 /// this decision is, after the same tip, whoever sent them: it is taken as
@@ -177,7 +174,7 @@ Future<void> runDockingStation({
               'cannot read the decision ${id.hex}',
             ));
         decided.take(id, decision);
-        waiting.remove(decision.event);
+        if (decision case DecidedAtEvent(:final event)) waiting.remove(event);
       case CaughtUp():
         caughtUp = true;
     }
