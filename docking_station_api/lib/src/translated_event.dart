@@ -18,7 +18,7 @@ import 'package:is_conversation_shapes/is_conversation_shapes.dart'
     show SourceMessageId, UserSaid, WhatChanged;
 import 'package:is_content_id/is_content_id.dart' show ObjectId;
 import 'package:is_logbook_format/is_logbook_format.dart' show Kind;
-import 'package:is_shapes/is_shapes.dart' show ActorId;
+import 'package:is_shapes/is_shapes.dart' show ActorId, TrajectoryId;
 import 'package:is_web_address_vocabulary/is_web_address_vocabulary.dart'
     show AddressPrefix;
 
@@ -363,15 +363,18 @@ final class ShownMessageJudged extends AdmissibleEvent {
   final VerdictOnShownMessage verdict;
 }
 
-/// [from] asked to close the trajectory [addressInExternalSystem] is under,
-/// on [message], such as Teams' "Close trajectory" action on any message, or
-/// the Close button on the card the agent posts when a trajectory starts.
-/// Anyone at the address may ask, and nothing of it goes to the agent.
+/// [from] asked to close [trajectory], on [message], a reply the agent sent
+/// in it, such as the Close in a Teams reply card's menu. Anyone at the
+/// address may ask, and nothing of it goes to the agent.
 ///
-/// The trajectory is found by the address, not by [message], since the
-/// message asked on is one the agent sent, and those are never admitted.
-/// [message] is kept to say where the person asked. A close always names who
-/// asked, since one asked by no one closes nothing.
+/// [trajectory] is the one [message] was sent in, as the reply itself
+/// carries it, so a close on an old reply closes that reply's trajectory,
+/// never whichever is open at the address now. The person's client sends it
+/// back, so it is not vouched for: the docking station closes it only when
+/// it is the trajectory open at [addressInExternalSystem], which anyone
+/// there may close anyway. [message] is kept to say where the person asked.
+/// A close always names who asked, since one asked by no one closes
+/// nothing.
 final class PersonAskedToCloseTrajectory extends AddressedEvent {
   const PersonAskedToCloseTrajectory({
     required super.addressInExternalSystem,
@@ -381,6 +384,7 @@ final class PersonAskedToCloseTrajectory extends AddressedEvent {
     required this.from,
     required super.key,
     required this.message,
+    required this.trajectory,
   });
 
   @override
@@ -388,6 +392,9 @@ final class PersonAskedToCloseTrajectory extends AddressedEvent {
 
   /// The message the person picked the close on, as it was sent.
   final SourceMessageId message;
+
+  /// The trajectory [message] was sent in, as the reply carries it.
+  final TrajectoryId trajectory;
 }
 
 /// An address in an external system: a Teams chat, channel or channel thread, a

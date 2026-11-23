@@ -375,7 +375,7 @@ final class OperatorName {
 /// `<case>` is `no-translator-for-source`, `translator-found-nothing`,
 /// `duplicate-event`, `address-not-admitted-to-mission`,
 /// `said-starts-no-turn`, `judged-message-has-no-trajectory`,
-/// `close-asked-at-address-with-no-trajectory` or
+/// `close-asked-for-trajectory-not-open-at-address` or
 /// `change-to-unadmitted-message`.
 sealed class EventNotAdmittedToMission extends AdmissionDecision
     implements DecidedAtEvent {
@@ -462,10 +462,12 @@ final class JudgedMessageHasNoTrajectory extends NotAdmittedKeyedEvent {
   });
 }
 
-/// A close asked in [addressInExternalSystem], which is under no trajectory:
-/// none was started there, or the one there is closed already.
-final class CloseAskedAtAddressWithNoTrajectory extends NotAdmittedKeyedEvent {
-  const CloseAskedAtAddressWithNoTrajectory(
+/// A close asked in [addressInExternalSystem] for a trajectory that is not
+/// the one open there: it is closed already, or it is another address's,
+/// or none is open there.
+final class CloseAskedForTrajectoryNotOpenAtAddress
+    extends NotAdmittedKeyedEvent {
+  const CloseAskedForTrajectoryNotOpenAtAddress(
     super.event, {
     required super.by,
     required super.addressInExternalSystem,

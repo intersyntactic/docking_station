@@ -109,8 +109,8 @@ String _why(EventNotAdmittedToMission declined) => switch (declined) {
   AddressNotAdmittedToMission() => 'address-not-admitted-to-mission',
   SaidStartsNoTurn() => 'said-starts-no-turn',
   JudgedMessageHasNoTrajectory() => 'judged-message-has-no-trajectory',
-  CloseAskedAtAddressWithNoTrajectory() =>
-    'close-asked-at-address-with-no-trajectory',
+  CloseAskedForTrajectoryNotOpenAtAddress() =>
+    'close-asked-for-trajectory-not-open-at-address',
   ChangeToUnadmittedMessage() => 'change-to-unadmitted-message',
 };
 
@@ -348,7 +348,7 @@ EventNotAdmittedToMission? _notAdmitted(
     case 'address-not-admitted-to-mission' ||
         'said-starts-no-turn' ||
         'judged-message-has-no-trajectory' ||
-        'close-asked-at-address-with-no-trajectory':
+        'close-asked-for-trajectory-not-open-at-address':
       if (json.length != 5) return null;
       return switch (why) {
         'address-not-admitted-to-mission' => AddressNotAdmittedToMission(
@@ -369,7 +369,7 @@ EventNotAdmittedToMission? _notAdmitted(
           addressInExternalSystem: addressInExternalSystem,
           key: key,
         ),
-        _ => CloseAskedAtAddressWithNoTrajectory(
+        _ => CloseAskedForTrajectoryNotOpenAtAddress(
           event,
           by: by,
           addressInExternalSystem: addressInExternalSystem,

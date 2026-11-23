@@ -93,6 +93,7 @@ final closeAsked = PersonAskedToCloseTrajectory(
   from: from,
   key: EventKey.parse('invoke:1')!,
   message: message,
+  trajectory: TrajectoryId.parse(_c)!,
 );
 
 const rules = JsonObject.of({'tools': 'all'});
@@ -201,6 +202,28 @@ void main() {
         '0.1.1 refuses extra fields',
   );
 
+  test('a close names the trajectory it closes, and one that names none is '
+      'refused', () {
+    final json = encodeTranslatedEvent(closeAsked).asUncheckedMap();
+    expect(json['trajectory'], _c);
+    expect(
+      (decodeTranslatedEvent(
+        JsonObject.of(json),
+      ) as PersonAskedToCloseTrajectory).trajectory,
+      TrajectoryId.parse(_c),
+    );
+    for (final bad in [
+      {...json}..remove('trajectory'),
+      {...json, 'trajectory': 'not-a-trajectory'},
+    ]) {
+      expect(
+        () => decodeTranslatedEvent(JsonObject.of(bad)),
+        throwsFormatException,
+        reason: '$bad',
+      );
+    }
+  });
+
   test('a duplicate', () {
     final entry = encodeDecision(
       DuplicateEvent(
@@ -273,7 +296,7 @@ void main() {
           AddressNotAdmittedToMission.new,
           SaidStartsNoTurn.new,
           JudgedMessageHasNoTrajectory.new,
-          CloseAskedAtAddressWithNoTrajectory.new,
+          CloseAskedForTrajectoryNotOpenAtAddress.new,
         ])
           why(
             decline(
@@ -290,7 +313,7 @@ void main() {
         'address-not-admitted-to-mission',
         'said-starts-no-turn',
         'judged-message-has-no-trajectory',
-        'close-asked-at-address-with-no-trajectory',
+        'close-asked-for-trajectory-not-open-at-address',
       ],
     );
     expect(
@@ -368,7 +391,7 @@ void main() {
           operator: OperatorName.parse('nick')!,
           reason: 'clearing test trajectories',
         ),
-        CloseAskedAtAddressWithNoTrajectory(
+        CloseAskedForTrajectoryNotOpenAtAddress(
           event,
           by: by,
           addressInExternalSystem: addressInExternalSystem,

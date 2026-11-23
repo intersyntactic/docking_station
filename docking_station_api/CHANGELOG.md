@@ -29,6 +29,14 @@ a reader on 0.4.0 refuses 0.3.0's entries, and a reader on 0.3.0 refuses
   `encodeRelayedEvent` writes one, for a relay. The kinds `event` and
   `arrived` are gone. `TranslatesRelayedEvents.source` is a
   `RelayedEventSource`.
+- A close names the trajectory it closes:
+  `PersonAskedToCloseTrajectory.trajectory`, the one the pressed reply was
+  sent in, as the reply carries it (`"trajectory"` on the wire). So a close
+  on an old reply closes that reply's trajectory, never whichever is open
+  at the address now. It closes only the trajectory open at its address;
+  any other is `CloseAskedForTrajectoryNotOpenAtAddress`
+  (`close-asked-for-trajectory-not-open-at-address`), which replaces
+  `CloseAskedAtAddressWithNoTrajectory`.
 - Every translated event names where replies to it go:
   `AddressedEvent.replyEndpoint`, an `AddressPrefix` from
   is_web_address_vocabulary ^0.1.1, null when the module can't name one. It

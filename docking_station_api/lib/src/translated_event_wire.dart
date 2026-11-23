@@ -12,7 +12,7 @@ import 'package:is_annotation_shapes/is_annotation_shapes.dart'
     show VerdictOnShownMessage;
 import 'package:is_conversation_shapes/is_conversation_shapes.dart'
     show SourceMessageId, UserSaid, WhatChanged;
-import 'package:is_shapes/is_shapes.dart' show ActorId;
+import 'package:is_shapes/is_shapes.dart' show ActorId, TrajectoryId;
 import 'package:is_web_address_vocabulary/is_web_address_vocabulary.dart'
     show decodeAddressPrefix, encodeAddressPrefix;
 
@@ -43,7 +43,7 @@ const translatedEventNodeShapes = <String, Set<String>>{
 /// `"change"`, a [WhatChanged]; `actors-joined-address`, with `"from"?` and
 /// `"joiners"`; `shown-message-judged`, with `"from"`, `"to"` and
 /// `"verdict"`, a [VerdictOnShownMessage]; `person-asked-to-close-trajectory`,
-/// with `"from"` and `"message"`.
+/// with `"from"`, `"message"` and `"trajectory"`.
 JsonObject encodeTranslatedEvent(AddressedEvent event) => JsonObject.of({
   'case': _case(event),
   'addressInExternalSystem': event.addressInExternalSystem.value,
@@ -68,10 +68,16 @@ JsonObject encodeTranslatedEvent(AddressedEvent event) => JsonObject.of({
       'to': to.value,
       'verdict': verdict.toJson(),
     },
-    PersonAskedToCloseTrajectory(:final from, :final message) => {
-      'from': from.value,
-      'message': message.value,
-    },
+    PersonAskedToCloseTrajectory(
+      :final from,
+      :final message,
+      :final trajectory,
+    ) =>
+      {
+        'from': from.value,
+        'message': message.value,
+        'trajectory': trajectory.hex,
+      },
   },
 });
 
@@ -169,8 +175,9 @@ AddressedEvent decodeTranslatedEvent(JsonObject json) {
         from: _parse(json, 'from', ActorId.parse),
         key: key,
         message: _parse(json, 'message', SourceMessageId.parse),
+        trajectory: _parse(json, 'trajectory', TrajectoryId.parse),
       ),
-      const {'from', 'message'},
+      const {'from', 'message', 'trajectory'},
     ),
     final other => throw FormatException(
       '`case` is not a translated event: $other',
