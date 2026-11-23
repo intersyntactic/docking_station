@@ -55,22 +55,25 @@ AdmissionDecision decide(
 
   final AdmissibleEvent admissible;
   switch (addressed) {
+    // The trajectory the close names, only while it is the one open at the
+    // close's address: an old reply's close names a trajectory since closed,
+    // and one from elsewhere names another address's.
+    case PersonAskedToCloseTrajectory(:final trajectory)
+        when decided.trajectoryOf(addressInExternalSystem) == trajectory:
+      return TrajectoryClosedBecausePersonAsked(
+        event,
+        by: by,
+        translatedEvent: addressed,
+        trajectory: trajectory,
+        mission: decided.missionOfTrajectory(trajectory),
+      );
     case PersonAskedToCloseTrajectory():
-      return switch (decided.trajectoryOf(addressInExternalSystem)) {
-        final trajectory? => TrajectoryClosedBecausePersonAsked(
-          event,
-          by: by,
-          translatedEvent: addressed,
-          trajectory: trajectory,
-          mission: decided.missionOfTrajectory(trajectory),
-        ),
-        null => CloseAskedAtAddressWithNoTrajectory(
-          event,
-          by: by,
-          addressInExternalSystem: addressInExternalSystem,
-          key: key,
-        ),
-      };
+      return CloseAskedForTrajectoryNotOpenAtAddress(
+        event,
+        by: by,
+        addressInExternalSystem: addressInExternalSystem,
+        key: key,
+      );
     case AdmissibleEvent():
       admissible = addressed;
   }

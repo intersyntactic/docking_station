@@ -258,7 +258,14 @@ void main() {
         ),
       ),
     );
-    AdmissionDecision close(String t, String key) => step(
+    TrajectoryId started(String key) =>
+        TrajectoryId.parse(_hash('decision $key').hex)!;
+    // A close pressed on a reply sent in the trajectory [startedBy] started.
+    AdmissionDecision close(
+      String t,
+      String key, {
+      required String startedBy,
+    }) => step(
       key,
       PersonAskedToCloseTrajectory(
         addressInExternalSystem: thread(t),
@@ -267,18 +274,22 @@ void main() {
         replyEndpoint: null,
         from: ActorId.parse('teams:t/q')!,
         key: EventKey.parse(key)!,
-        message: SourceMessageId.parse('$t|card')!,
+        message: SourceMessageId.parse('$t|reply')!,
+        trajectory: started(startedBy),
       ),
     );
-    TrajectoryId started(String key) =>
-        TrajectoryId.parse(_hash('decision $key').hex)!;
 
     say('t1', 'a');
     final mission = MissionId.parse(_hash('decision a').hex)!;
     say('t2', 'b');
 
     expect(
-      close('t1', 'c'),
+      close('t2', 'x', startedBy: 'a'),
+      isA<CloseAskedForTrajectoryNotOpenAtAddress>(),
+      reason: "another address's trajectory",
+    );
+    expect(
+      close('t1', 'c', startedBy: 'a'),
       isA<TrajectoryClosedBecausePersonAsked>()
           .having((c) => c.trajectory, 'trajectory', started('a'))
           .having((c) => c.mission, 'mission', mission)
@@ -293,11 +304,11 @@ void main() {
       isA<OnTrajectory>().having((p) => p.trajectory, 'the same', started('b')),
     );
     expect(
-      close('t1', 'e'),
-      isA<CloseAskedAtAddressWithNoTrajectory>(),
+      close('t1', 'e', startedBy: 'a'),
+      isA<CloseAskedForTrajectoryNotOpenAtAddress>(),
       reason: 'closed already',
     );
-    expect(close('t1', 'c'), isA<DuplicateEvent>());
+    expect(close('t1', 'c', startedBy: 'a'), isA<DuplicateEvent>());
     expect(
       (say('t1', 'f') as EventAdmittedToMission).placement,
       isA<StartsTrajectory>().having(
@@ -306,7 +317,24 @@ void main() {
         isA<InMission>().having((m) => m.mission, 'mission', mission),
       ),
     );
-    expect(close('t3', 'g'), isA<CloseAskedAtAddressWithNoTrajectory>());
+    expect(
+      close('t1', 'h', startedBy: 'a'),
+      isA<CloseAskedForTrajectoryNotOpenAtAddress>(),
+      reason: "an old reply's close leaves the trajectory open now",
+    );
+    expect(
+      close('t1', 'i', startedBy: 'f'),
+      isA<TrajectoryClosedBecausePersonAsked>().having(
+        (c) => c.trajectory,
+        'trajectory',
+        started('f'),
+      ),
+    );
+    expect(
+      close('t3', 'g', startedBy: 'a'),
+      isA<CloseAskedForTrajectoryNotOpenAtAddress>(),
+      reason: 'nothing open there',
+    );
   });
 }
 
