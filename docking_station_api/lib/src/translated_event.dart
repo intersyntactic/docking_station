@@ -1,11 +1,12 @@
-/// The reading contract: what a module gives the docking station, and all it
-/// gives.
+/// The translation contract: what a module gives the docking station, and all
+/// it gives.
 ///
 /// A module takes part only by describing. The docking station hands its
-/// [ModuleReading] every event from the module's relay, in the logbook's
-/// order, and for each the reading says what it is: a [EventReading]. The
-/// docking station never reads a module's bytes itself, and the module never
-/// learns which trajectory anything went to.
+/// [TranslatesRelayedEvents] every event from the module's relay, in the
+/// logbook's order, and for each the translator says what it is in the
+/// docking station's terms: a [TranslatedEvent]. The docking station never
+/// reads a module's bytes itself, and the module never learns which
+/// trajectory anything went to.
 library;
 
 import 'dart:convert';
@@ -16,13 +17,59 @@ import 'package:is_annotation_shapes/is_annotation_shapes.dart'
 import 'package:is_conversation_shapes/is_conversation_shapes.dart'
     show SourceMessageId, UserSaid, WhatChanged;
 import 'package:is_content_id/is_content_id.dart' show ObjectId;
-import 'package:is_shapes/is_shapes.dart' show ActorId;
+import 'package:is_logbook_format/is_logbook_format.dart' show Kind;
+import 'package:is_shapes/is_shapes.dart' show ActorId, TrajectoryId;
+import 'package:is_web_address_vocabulary/is_web_address_vocabulary.dart'
+    show AddressPrefix;
 
-/// One event, as the docking station gives it to a reading: its entry's hash,
-/// and what its relay recorded, `{"at", "source", "bytes"}`, as an entry of
-/// kind `event`, or `arrived` if it was recorded before that kind was named.
+/// Where relayed events come from, such as `teams`: a lowercase letter, then
+/// lowercase letters, digits and `-`, as an address in an external system
+/// starts.
 ///
-/// Only [RelayedEvent.read] makes one, from the entry's body as recorded.
+/// Its relay records each event as an entry of [kind], `<source>-event`. The
+/// logbook's sender table lets one user write each kind, so an event's
+/// source is vouched for by who may write its kind, never by its body.
+final class RelayedEventSource {
+  const RelayedEventSource._(this.value);
+
+  /// The source, as text.
+  final String value;
+
+  /// [s] as a source; null unless it is one.
+  static RelayedEventSource? parse(String s) =>
+      _name.hasMatch(s) ? RelayedEventSource._(s) : null;
+
+  /// The source whose relay records entries of [kind]; null when [kind] is
+  /// not a relayed event's.
+  static RelayedEventSource? ofKind(Kind kind) {
+    final name = kind.name;
+    if (!name.endsWith(_suffix)) return null;
+    return parse(name.substring(0, name.length - _suffix.length));
+  }
+
+  /// The kind its relay records each event as.
+  Kind get kind => Kind.parse('$value$_suffix')!;
+
+  static final _name = RegExp(r'^[a-z][a-z0-9-]*$');
+  static const _suffix = '-event';
+
+  @override
+  bool operator ==(Object other) =>
+      other is RelayedEventSource && other.value == value;
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toString() => value;
+}
+
+/// One event, as the docking station gives it to a translator: its entry's
+/// hash, its source, read from the entry's kind, and what its relay
+/// recorded, `{"at", "bytes"}`.
+///
+/// Only [RelayedEvent.read] makes one, from the entry's kind and body as
+/// recorded. A relay writes one with [encodeRelayedEvent].
 final class RelayedEvent {
   const RelayedEvent._({
     required this.entry,
@@ -38,28 +85,27 @@ final class RelayedEvent {
   /// When the relay took it in.
   final DateTime at;
 
-  /// The relay's name for where it came from, such as `teams`.
-  final String source;
+  /// Where it came from, as its entry's kind says.
+  final RelayedEventSource source;
 
   /// The bytes exactly as they came.
   final Uint8List bytes;
 
-  /// The event recorded at [entry], from its [body] as the relay recorded it.
-  /// Null for anything else: it is our own wire, read strictly.
-  static RelayedEvent? read(ObjectId entry, Uint8List body) {
+  /// The event recorded at [entry], from its [kind] and [body] as the relay
+  /// recorded them. Null for anything else: a kind that is no relayed
+  /// event's, or a body that isn't exactly `{"at", "bytes"}`. It is our own
+  /// wire, read strictly.
+  static RelayedEvent? read(ObjectId entry, Kind kind, Uint8List body) {
+    final source = RelayedEventSource.ofKind(kind);
+    if (source == null) return null;
     final Object? json;
     try {
       json = jsonDecode(utf8.decode(body));
     } on FormatException {
       return null;
     }
-    if (json
-        case {
-          'at': final String at,
-          'source': final String source,
-          'bytes': final String bytes,
-        }
-        when json.length == 3) {
+    if (json case {'at': final String at, 'bytes': final String bytes}
+        when json.length == 2) {
       final when = DateTime.tryParse(at);
       final Uint8List raw;
       try {
@@ -67,33 +113,52 @@ final class RelayedEvent {
       } on FormatException {
         return null;
       }
-      if (when == null || source.isEmpty) return null;
+      if (when == null) return null;
       return RelayedEvent._(entry: entry, at: when, source: source, bytes: raw);
     }
     return null;
   }
 }
 
-/// A module's reading of its relay's events, as a fold: the docking station
-/// starts from [start] and calls [step] with each event from [source], in
-/// the logbook's order, keeping only the state it returns.
+/// The entry a relay records for [bytes] from [source], taken in [at]: its
+/// kind, `<source>-event`, and its body, `{"at", "bytes"}`, as
+/// [RelayedEvent.read] reads them back.
+(Kind, Uint8List) encodeRelayedEvent(
+  RelayedEventSource source, {
+  required DateTime at,
+  required Uint8List bytes,
+}) => (
+  source.kind,
+  utf8.encode(
+    jsonEncode({
+      'at': at.toUtc().toIso8601String(),
+      'bytes': base64Encode(bytes),
+    }),
+  ),
+);
+
+/// A module's translator of its relay's events into the docking station's
+/// terms: one [TranslatedEvent] per event, carrying state from one event to
+/// the next. The docking station starts from [start] and calls [step] with
+/// each event from [source], in the logbook's order, keeping only the state
+/// it returns.
 ///
 /// [S] is the module's own, and the docking station never looks inside it. It
-/// is there for what a reading needs from earlier events: a quote's
+/// is there for what a translation needs from earlier events: a quote's
 /// author, the message an edit or delete is of, who an earlier join brought
-/// in. On every start the docking station folds again from the logbook's
+/// in. On every start the docking station steps again from the logbook's
 /// beginning, already-admitted events included, so [step] must give the
 /// same answer for the same events in the same order, and must not change
 /// the state it is given.
-abstract interface class ModuleReading<S> {
-  /// The [RelayedEvent.source] whose events this reads.
-  String get source;
+abstract interface class TranslatesRelayedEvents<S> {
+  /// The [RelayedEvent.source] whose events this translates.
+  RelayedEventSource get source;
 
   /// The state before any event.
   S get start;
 
-  /// [event] read, after every earlier one from [source] has been.
-  (S, EventReading) step(S state, RelayedEvent event);
+  /// [event] translated, after every earlier one from [source] has been.
+  (S, TranslatedEvent) step(S state, RelayedEvent event);
 }
 
 /// What one event is: something said ([MessageSaid]), a change to an
@@ -101,13 +166,13 @@ abstract interface class ModuleReading<S> {
 /// ([ActorsJoinedAddress]), a person's verdict on something the agent showed
 /// ([ShownMessageJudged]), a person asking to close a trajectory
 /// ([PersonAskedToCloseTrajectory]), or nothing to admit ([NothingToAdmit]).
-sealed class EventReading {
-  const EventReading();
+sealed class TranslatedEvent {
+  const TranslatedEvent();
 }
 
 /// Nothing to admit: a typing indicator, a reaction the module does not
 /// carry, an activity it cannot read.
-final class NothingToAdmit extends EventReading {
+final class NothingToAdmit extends TranslatedEvent {
   const NothingToAdmit();
 }
 
@@ -115,11 +180,12 @@ final class NothingToAdmit extends EventReading {
 /// once. Either an [AdmissibleEvent], which goes under a trajectory, or a
 /// [PersonAskedToCloseTrajectory], which closes one and is admitted under
 /// none.
-sealed class AddressedEvent extends EventReading {
+sealed class AddressedEvent extends TranslatedEvent {
   const AddressedEvent({
     required this.addressInExternalSystem,
     required this.containingAddress,
     required this.addressedTo,
+    required this.replyEndpoint,
     required this.key,
   });
 
@@ -131,7 +197,7 @@ sealed class AddressedEvent extends EventReading {
   /// itself does.
   ///
   /// It is what the outside groups its addresses by: a channel is a
-  /// mission and each of its threads a trajectory. The reading names it so
+  /// mission and each of its threads a trajectory. The translator names it so
   /// the docking station never reads a module's ids to find it.
   final AddressInExternalSystem? containingAddress;
 
@@ -140,6 +206,12 @@ sealed class AddressedEvent extends EventReading {
   /// can't verify who it was sent to. A fact of the event, not which pool or
   /// sign-in the bot is: those belong to whoever keeps the pools.
   final ActorId? addressedTo;
+
+  /// Where replies to it go, such as a Teams conversation's activities on the
+  /// Bot Connector that sent it, or null when the module can't name one. The
+  /// module vouches for it, as the external system verified the event; the
+  /// airlock grants a trajectory's replies to the one its start entry names.
+  final AddressPrefix? replyEndpoint;
 
   /// Who it comes from, or null for no one the module can name.
   ActorId? get from;
@@ -157,6 +229,7 @@ sealed class AdmissibleEvent extends AddressedEvent {
     required super.addressInExternalSystem,
     required super.containingAddress,
     required super.addressedTo,
+    required super.replyEndpoint,
     required super.key,
   });
 }
@@ -165,15 +238,16 @@ sealed class AdmissibleEvent extends AddressedEvent {
 /// Whether it starts a turn is the docking station's decision, under the
 /// trajectory's rules.
 ///
-/// The reading builds [node] because only its fold holds what that takes,
-/// such as who wrote a message it quotes. Someone the module can't name has
-/// said nothing it
-/// can admit, since a [UserSaid] always has an author.
+/// The translator builds [node] because only its state holds what that
+/// takes, such as who wrote a message it quotes. Someone the module can't
+/// name has said nothing it can admit, since a [UserSaid] always has an
+/// author.
 final class MessageSaid extends AdmissibleEvent {
   const MessageSaid({
     required super.addressInExternalSystem,
     required super.containingAddress,
     required super.addressedTo,
+    required super.replyEndpoint,
     required super.key,
     required this.node,
   });
@@ -199,6 +273,7 @@ final class MessageChanged extends AdmissibleEvent {
     required super.addressInExternalSystem,
     required super.containingAddress,
     required super.addressedTo,
+    required super.replyEndpoint,
     required this.from,
     required super.key,
     required this.message,
@@ -222,6 +297,7 @@ final class ActorsJoinedAddress extends AdmissibleEvent {
     required super.addressInExternalSystem,
     required super.containingAddress,
     required super.addressedTo,
+    required super.replyEndpoint,
     required this.from,
     required super.key,
     required this.joiners,
@@ -239,6 +315,7 @@ final class ActorsJoinedAddress extends AdmissibleEvent {
     required AddressInExternalSystem addressInExternalSystem,
     required AddressInExternalSystem? containingAddress,
     required ActorId? addressedTo,
+    required AddressPrefix? replyEndpoint,
     required ActorId? from,
     required EventKey key,
     required Iterable<ActorId> joiners,
@@ -249,6 +326,7 @@ final class ActorsJoinedAddress extends AdmissibleEvent {
       addressInExternalSystem: addressInExternalSystem,
       containingAddress: containingAddress,
       addressedTo: addressedTo,
+      replyEndpoint: replyEndpoint,
       from: from,
       key: key,
       joiners: list,
@@ -269,6 +347,7 @@ final class ShownMessageJudged extends AdmissibleEvent {
     required super.addressInExternalSystem,
     required super.containingAddress,
     required super.addressedTo,
+    required super.replyEndpoint,
     required this.from,
     required super.key,
     required this.to,
@@ -284,23 +363,28 @@ final class ShownMessageJudged extends AdmissibleEvent {
   final VerdictOnShownMessage verdict;
 }
 
-/// [from] asked to close the trajectory [addressInExternalSystem] is under,
-/// on [message], such as Teams' "Close trajectory" action on any message, or
-/// the Close button on the card the agent posts when a trajectory starts.
-/// Anyone at the address may ask, and nothing of it goes to the agent.
+/// [from] asked to close [trajectory], on [message], a reply the agent sent
+/// in it, such as the Close in a Teams reply card's menu. Anyone at the
+/// address may ask, and nothing of it goes to the agent.
 ///
-/// The trajectory is found by the address, not by [message], since the
-/// message asked on is one the agent sent, and those are never admitted.
-/// [message] is kept to say where the person asked. A close always names who
-/// asked, since one asked by no one closes nothing.
+/// [trajectory] is the one [message] was sent in, as the reply itself
+/// carries it, so a close on an old reply closes that reply's trajectory,
+/// never whichever is open at the address now. The person's client sends it
+/// back, so it is not vouched for: the docking station closes it only when
+/// it is the trajectory open at [addressInExternalSystem], which anyone
+/// there may close anyway. [message] is kept to say where the person asked.
+/// A close always names who asked, since one asked by no one closes
+/// nothing.
 final class PersonAskedToCloseTrajectory extends AddressedEvent {
   const PersonAskedToCloseTrajectory({
     required super.addressInExternalSystem,
     required super.containingAddress,
     required super.addressedTo,
+    required super.replyEndpoint,
     required this.from,
     required super.key,
     required this.message,
+    required this.trajectory,
   });
 
   @override
@@ -308,6 +392,9 @@ final class PersonAskedToCloseTrajectory extends AddressedEvent {
 
   /// The message the person picked the close on, as it was sent.
   final SourceMessageId message;
+
+  /// The trajectory [message] was sent in, as the reply carries it.
+  final TrajectoryId trajectory;
 }
 
 /// An address in an external system: a Teams chat, channel or channel thread, a

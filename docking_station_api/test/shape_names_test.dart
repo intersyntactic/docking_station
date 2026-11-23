@@ -7,11 +7,11 @@ import 'package:is_docking_station_api/is_docking_station_api.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('no two node shapes a reading carries share a name', () {
+  test('no two node shapes a translated event carries share a name', () {
     final seen = <String, String>{};
     final clashes = <String>[];
     for (final MapEntry(key: field, value: shapes)
-        in readingNodeShapes.entries) {
+        in translatedEventNodeShapes.entries) {
       for (final shape in shapes) {
         if (seen[shape] case final other?) {
           clashes.add('$shape: in `$other` and `$field`');

@@ -2,6 +2,57 @@ Each version is tagged `docking_station_api-vX.Y.Z` on the commit it is
 published from. Versions up to 0.3.0 were published as
 `is_admission_vocabulary` and tagged `admission_vocabulary-vX.Y.Z`.
 
+## 0.4.0
+
+Breaking, in code and in the logbook. Published only into a fresh logbook:
+a reader on 0.4.0 refuses 0.3.0's entries, and a reader on 0.3.0 refuses
+0.4.0's.
+
+- A module's "reading" is its translator, since it turns each of its
+  relay's events into the docking station's terms, carrying state from one
+  event to the next:
+  - `ModuleReading<S>` is `TranslatesRelayedEvents<S>`.
+  - `EventReading` is `TranslatedEvent`.
+  - `encodeReading` and `decodeReading` are `encodeTranslatedEvent` and
+    `decodeTranslatedEvent`; `readingNodeShapes` is
+    `translatedEventNodeShapes`.
+  - `NoReadingForSource` is `NoTranslatorForSource`, and
+    `ReadingFoundNothing` is `TranslatorFoundNothing`.
+  - `EventAdmittedToMission.reading` and
+    `TrajectoryClosedBecausePersonAsked.reading` are `.translatedEvent`.
+- A relayed event's source is its entry's kind, never its body, so the
+  logbook's sender table vouches for it: each relay records its events as
+  `<source>-event` (`teams-event`), and only that relay's user may write
+  the kind. `RelayedEventSource` is the source, with its `kind` and
+  `ofKind`. `RelayedEvent.read` takes the entry's kind, and the body is
+  `{"at", "bytes"}` alone; a body that names a source is refused.
+  `encodeRelayedEvent` writes one, for a relay. The kinds `event` and
+  `arrived` are gone. `TranslatesRelayedEvents.source` is a
+  `RelayedEventSource`.
+- A close names the trajectory it closes:
+  `PersonAskedToCloseTrajectory.trajectory`, the one the pressed reply was
+  sent in, as the reply carries it (`"trajectory"` on the wire). So a close
+  on an old reply closes that reply's trajectory, never whichever is open
+  at the address now. It closes only the trajectory open at its address;
+  any other is `CloseAskedForTrajectoryNotOpenAtAddress`
+  (`close-asked-for-trajectory-not-open-at-address`), which replaces
+  `CloseAskedAtAddressWithNoTrajectory`.
+- Every translated event names where replies to it go:
+  `AddressedEvent.replyEndpoint`, an `AddressPrefix` from
+  is_web_address_vocabulary ^0.1.1, null when the module can't name one. It
+  travels inside `translatedEvent` as `replyEndpoint`, written by
+  `encodeAddressPrefix`. An admission that starts a mission or a trajectory
+  copies it to the entry's top level beside `rules`
+  (`EventAdmittedToMission.replyEndpoint`), and path_start reads it there
+  (`EntryStartsTrajectory.replyEndpoint`), so the airlock has it without
+  decoding the translated event. A copy that differs from the translated
+  event's, or one on an entry that starts nothing, makes the entry
+  unreadable.
+- In the entries: the `reading` field of `event-admitted-to-mission` and
+  `trajectory-closed` is `translatedEvent`, and the `why`s
+  `no-reading-for-source` and `reading-found-nothing` are
+  `no-translator-for-source` and `translator-found-nothing`.
+
 ## 0.3.0
 
 - Published as `is_docking_station_api`, the same code as

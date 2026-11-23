@@ -13,8 +13,8 @@ each, whether it comes into a mission and on which trajectory. Two sides
 need its words without needing its engine:
 
 - **A module**, such as the Teams module, describes each event its relay
-  recorded. It implements `ModuleReading`, a fold over `RelayedEvent`s, and
-  gives an `EventReading` for each.
+  recorded. It implements `TranslatesRelayedEvents`, which turns each
+  `RelayedEvent` into a `TranslatedEvent` in the docking station's terms.
 - **A reader of the logbook**, such as loop_launcher, agent_loop or the
   airlock, reads the decisions the docking station recorded.
 
@@ -23,9 +23,9 @@ How the docking station decides (`decide`, what it has decided so far, its
 rules, and the loop that runs it) lives in the docking station service,
 which nothing else imports.
 
-## Readings in
+## Translated events in
 
-For each event a module's reading names the address it belongs to, what that
+For each event a module's translator names the address it belongs to, what that
 address sits within (the channel a thread is in, or nothing), who it comes
 from, the bot it was sent to as the external system verified it
 (`addressedTo`), its event key (what "never decided twice" compares), and
@@ -40,8 +40,9 @@ what it is:
 | `PersonAskedToCloseTrajectory` | A person asked to close the trajectory at an address |
 | `NothingToAdmit` | Anything the module doesn't carry |
 
-`encodeReading` and `decodeReading` write and read a reading as the decision
-entries carry it, strictly.
+`encodeTranslatedEvent` and `decodeTranslatedEvent` write and read a
+translated event as the decision entries carry it, under `translatedEvent`,
+strictly.
 
 ## Decisions out
 
@@ -62,8 +63,8 @@ recognise, an extra field included, is null.
 
 `package:is_docking_station_api/path_start.dart` reads an
 `event-admitted-to-mission` entry only for the trajectory it starts and that
-trajectory's rules. It never decodes the reading, which is what strangers
-sent, and a test walks its import graph to hold that.
+trajectory's rules. It never decodes the translated event, which is what
+strangers sent, and a test walks its import graph to hold that.
 
 ## Versions
 

@@ -1,5 +1,5 @@
-/// A reading as the `event-admitted-to-mission` entry carries it, and back,
-/// read strictly, since it is our own wire.
+/// A translated event as the `event-admitted-to-mission` entry carries it, and
+/// back, read strictly, since it is our own wire.
 ///
 /// The nodes inside travel in their own packages' map form,
 /// `{"shape": <class name>, ...its fields}`, each under a field of its own,
@@ -12,39 +12,47 @@ import 'package:is_annotation_shapes/is_annotation_shapes.dart'
     show VerdictOnShownMessage;
 import 'package:is_conversation_shapes/is_conversation_shapes.dart'
     show SourceMessageId, UserSaid, WhatChanged;
-import 'package:is_shapes/is_shapes.dart' show ActorId;
+import 'package:is_shapes/is_shapes.dart' show ActorId, TrajectoryId;
+import 'package:is_web_address_vocabulary/is_web_address_vocabulary.dart'
+    show decodeAddressPrefix, encodeAddressPrefix;
 
-import 'reading.dart';
+import 'translated_event.dart';
 
-/// Every node shape a reading can carry, by the field it travels in, as
-/// each node's package names them. A `shape` is one namespace across every
+/// Every node shape a translated event can carry, by the field it travels in,
+/// as each node's package names them. A `shape` is one namespace across every
 /// package whose nodes travel in map form, so no two of these may share a
 /// name, and the docking station checks that none do.
-const readingNodeShapes = <String, Set<String>>{
+const translatedEventNodeShapes = <String, Set<String>>{
   'node': {UserSaid.shapeName},
   'change': WhatChanged.shapeNames,
   'verdict': VerdictOnShownMessage.shapeNames,
 };
 
-/// [reading] as JSON:
+/// [event] as JSON:
 ///
 ///     {"case": <case>, "addressInExternalSystem": <id>,
-///      "containingAddress": <id>?, "addressedTo": <actor>?, "key": <key>,
+///      "containingAddress": <id>?, "addressedTo": <actor>?,
+///      "replyEndpoint": <address prefix>?, "key": <key>,
 ///      ...the case's own fields}
+///
+/// `<address prefix>` is `{"origin", "pathPrefix"}`, as is_web_address_vocabulary's
+/// `encodeAddressPrefix` writes it.
 ///
 /// `<case>` and its fields are `message-said`, with `"node"`, a
 /// [UserSaid]; `message-changed`, with `"from"?`, `"message"` and
 /// `"change"`, a [WhatChanged]; `actors-joined-address`, with `"from"?` and
 /// `"joiners"`; `shown-message-judged`, with `"from"`, `"to"` and
 /// `"verdict"`, a [VerdictOnShownMessage]; `person-asked-to-close-trajectory`,
-/// with `"from"` and `"message"`.
-JsonObject encodeReading(AddressedEvent reading) => JsonObject.of({
-  'case': _case(reading),
-  'addressInExternalSystem': reading.addressInExternalSystem.value,
-  'containingAddress': ?reading.containingAddress?.value,
-  'addressedTo': ?reading.addressedTo?.value,
-  'key': reading.key.value,
-  ...switch (reading) {
+/// with `"from"`, `"message"` and `"trajectory"`.
+JsonObject encodeTranslatedEvent(AddressedEvent event) => JsonObject.of({
+  'case': _case(event),
+  'addressInExternalSystem': event.addressInExternalSystem.value,
+  'containingAddress': ?event.containingAddress?.value,
+  'addressedTo': ?event.addressedTo?.value,
+  if (event.replyEndpoint case final endpoint?)
+    'replyEndpoint': encodeAddressPrefix(endpoint),
+  'key': event.key.value,
+  ...switch (event) {
     MessageSaid(:final node) => {'node': node.toJson()},
     MessageChanged(:final from, :final message, :final change) => {
       'from': ?from?.value,
@@ -60,14 +68,20 @@ JsonObject encodeReading(AddressedEvent reading) => JsonObject.of({
       'to': to.value,
       'verdict': verdict.toJson(),
     },
-    PersonAskedToCloseTrajectory(:final from, :final message) => {
-      'from': from.value,
-      'message': message.value,
-    },
+    PersonAskedToCloseTrajectory(
+      :final from,
+      :final message,
+      :final trajectory,
+    ) =>
+      {
+        'from': from.value,
+        'message': message.value,
+        'trajectory': trajectory.hex,
+      },
   },
 });
 
-String _case(AddressedEvent reading) => switch (reading) {
+String _case(AddressedEvent event) => switch (event) {
   MessageSaid() => 'message-said',
   MessageChanged() => 'message-changed',
   ActorsJoinedAddress() => 'actors-joined-address',
@@ -75,10 +89,10 @@ String _case(AddressedEvent reading) => switch (reading) {
   PersonAskedToCloseTrajectory() => 'person-asked-to-close-trajectory',
 };
 
-/// [json] read back as the reading [encodeReading] wrote. A
+/// [json] read back as the translated event [encodeTranslatedEvent] wrote. A
 /// [FormatException] for anything it doesn't write: an unknown case, a
 /// field missing, extra or malformed, a node its package won't read.
-AddressedEvent decodeReading(JsonObject json) {
+AddressedEvent decodeTranslatedEvent(JsonObject json) {
   final addressInExternalSystem = _parse(
     json,
     'addressInExternalSystem',
@@ -90,16 +104,20 @@ AddressedEvent decodeReading(JsonObject json) {
   final addressedTo = json.has('addressedTo')
       ? _parse(json, 'addressedTo', ActorId.parse)
       : null;
+  final replyEndpoint = json.has('replyEndpoint')
+      ? decodeAddressPrefix(json.raw('replyEndpoint'), 'replyEndpoint')
+      : null;
   final key = _parse(json, 'key', EventKey.parse);
   ActorId? from() =>
       json.has('from') ? _parse(json, 'from', ActorId.parse) : null;
 
-  final (reading, fields) = switch (json.string('case')) {
+  final (event, fields) = switch (json.string('case')) {
     'message-said' => (
       MessageSaid(
         addressInExternalSystem: addressInExternalSystem,
         containingAddress: containingAddress,
         addressedTo: addressedTo,
+        replyEndpoint: replyEndpoint,
         key: key,
         node: UserSaid.fromJson(json.object('node')),
       ),
@@ -110,6 +128,7 @@ AddressedEvent decodeReading(JsonObject json) {
         addressInExternalSystem: addressInExternalSystem,
         containingAddress: containingAddress,
         addressedTo: addressedTo,
+        replyEndpoint: replyEndpoint,
         from: from(),
         key: key,
         message: _parse(json, 'message', SourceMessageId.parse),
@@ -122,6 +141,7 @@ AddressedEvent decodeReading(JsonObject json) {
             addressInExternalSystem: addressInExternalSystem,
             containingAddress: containingAddress,
             addressedTo: addressedTo,
+            replyEndpoint: replyEndpoint,
             from: from(),
             key: key,
             joiners: [
@@ -138,6 +158,7 @@ AddressedEvent decodeReading(JsonObject json) {
         addressInExternalSystem: addressInExternalSystem,
         containingAddress: containingAddress,
         addressedTo: addressedTo,
+        replyEndpoint: replyEndpoint,
         from: _parse(json, 'from', ActorId.parse),
         key: key,
         to: _parse(json, 'to', SourceMessageId.parse),
@@ -150,13 +171,17 @@ AddressedEvent decodeReading(JsonObject json) {
         addressInExternalSystem: addressInExternalSystem,
         containingAddress: containingAddress,
         addressedTo: addressedTo,
+        replyEndpoint: replyEndpoint,
         from: _parse(json, 'from', ActorId.parse),
         key: key,
         message: _parse(json, 'message', SourceMessageId.parse),
+        trajectory: _parse(json, 'trajectory', TrajectoryId.parse),
       ),
-      const {'from', 'message'},
+      const {'from', 'message', 'trajectory'},
     ),
-    final other => throw FormatException('`case` is not a reading: $other'),
+    final other => throw FormatException(
+      '`case` is not a translated event: $other',
+    ),
   };
   for (final field in json.keys) {
     if (!{
@@ -164,13 +189,14 @@ AddressedEvent decodeReading(JsonObject json) {
       'addressInExternalSystem',
       'containingAddress',
       'addressedTo',
+      'replyEndpoint',
       'key',
       ...fields,
     }.contains(field)) {
-      throw FormatException('`$field` is not a field of a reading');
+      throw FormatException('`$field` is not a field of a translated event');
     }
   }
-  return reading;
+  return event;
 }
 
 /// [json]'s [field], a string, parsed by [parse]; a [JsonFieldException]
