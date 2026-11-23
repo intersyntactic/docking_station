@@ -1,7 +1,13 @@
-Each version is tagged `admission_vocabulary-vX.Y.Z` on the commit it is
-published from.
+Each version is tagged `docking_station_api-vX.Y.Z` on the commit it is
+published from. Versions up to 0.3.0 were published as
+`is_admission_vocabulary` and tagged `admission_vocabulary-vX.Y.Z`.
 
 ## 0.3.0
+
+- Published as `is_docking_station_api`, the same code as
+  `is_admission_vocabulary` 0.3.0. Imports become
+  `package:is_docking_station_api/is_docking_station_api.dart` and
+  `package:is_docking_station_api/path_start.dart`.
 
 - A trajectory can be closed by an operator, from outside its
   conversation: `TrajectoryClosedByOperator`, with the operator's

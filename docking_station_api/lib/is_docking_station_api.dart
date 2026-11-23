@@ -1,5 +1,5 @@
-/// What other parts of intersyntactic import to speak with the docking
-/// station, and nothing of how it decides.
+/// The docking station's contract: what other parts of intersyntactic import
+/// to speak with the docking station, and nothing of how it decides.
 ///
 /// Readings in: [ModuleReading], which a module implements, and the
 /// [EventReading] it gives for each [RelayedEvent]. Decisions out:

@@ -1,6 +1,7 @@
 The changelog of `is_docking_station`, tagged `vX.Y.Z`. Its last version is
 0.3.0: after it, the readings and decisions went on as
-`is_admission_vocabulary` (`admission_vocabulary/CHANGELOG.md`) and the
+`is_admission_vocabulary`, now `is_docking_station_api`
+(`docking_station_api/CHANGELOG.md`), and the
 engine moved into the service (`service/CHANGELOG.md`).
 
 ## 0.3.0

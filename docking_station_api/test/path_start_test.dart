@@ -7,8 +7,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:checked_json/checked_json.dart' show JsonObject;
-import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
-import 'package:is_admission_vocabulary/path_start.dart';
+import 'package:is_docking_station_api/is_docking_station_api.dart';
+import 'package:is_docking_station_api/path_start.dart';
 import 'package:is_shapes/is_shapes.dart'
     show DecidedBy, MissionId, TrajectoryId;
 import 'package:test/test.dart';
