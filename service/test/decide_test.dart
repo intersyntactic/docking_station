@@ -6,7 +6,7 @@ import 'package:checked_json/checked_json.dart' show JsonObject;
 import 'package:is_conversation_shapes/is_conversation_shapes.dart'
     show SourceMessageId, UserSaid;
 import 'package:docking_station_service/docking_station_service.dart';
-import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
+import 'package:is_docking_station_api/is_docking_station_api.dart';
 import 'package:is_logbook_client/is_logbook_client.dart' show ObjectId;
 import 'package:is_shapes/is_shapes.dart'
     show ActorId, DecidedBy, MissionId, TrajectoryId;
@@ -227,10 +227,10 @@ void main() {
     AddressInExternalSystem thread(String t) =>
         AddressInExternalSystem.parse('test:channel;$t')!;
     final decided = DecidedSoFar();
-    AdmissionDecision step(String key, AddressedEvent reading) {
+    AdmissionDecision step(String key, AddressedEvent translated) {
       final decision = decide(
         _hash(key),
-        reading,
+        translated,
         decided,
         missions: _All(),
         turns: _All(),
@@ -276,7 +276,11 @@ void main() {
       isA<TrajectoryClosedBecausePersonAsked>()
           .having((c) => c.trajectory, 'trajectory', started('a'))
           .having((c) => c.mission, 'mission', mission)
-          .having((c) => c.reading.from.value, 'who asked', 'teams:t/q'),
+          .having(
+            (c) => c.translatedEvent.from.value,
+            'who asked',
+            'teams:t/q',
+          ),
     );
     expect(
       (say('t2', 'd') as EventAdmittedToMission).placement,

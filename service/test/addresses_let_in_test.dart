@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'package:docking_station_service/docking_station_service.dart';
 import 'package:is_conversation_shapes/is_conversation_shapes.dart'
     show SourceMessageId, UserSaid;
-import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
+import 'package:is_docking_station_api/is_docking_station_api.dart';
 import 'package:is_shapes/is_shapes.dart' show ActorId;
 import 'package:test/test.dart';
 
@@ -16,19 +16,18 @@ const _chat = 'teams:19:chat@thread.v2';
 /// What may leave this machine, allowing model calls as [signIns].
 Map<String, Object?> _whatMayLeave(List<String> signIns) => {
   'modelSignInsCallsMayGoOutAs': signIns,
-  'sitesTheWebDriverMayReach': [
-    {
-      'site': 'https://docs.example.com',
-      'goesAs': {'kind': 'nobody'},
-    },
-  ],
+  'fetchesMayReach': <Object?>[],
+  'webRequestsMayReach': <Object?>[],
   'programsNetwork': 'noNetworkOfTheirOwn',
 };
 
-/// Flight rules starting on [model] as [signIn], and allowing only it.
+/// Flight rules starting on [model] as [signIn], allowing only it, and
+/// running no programs.
 Map<String, Object?> _flightRules(String signIn, String model) => {
   'whatMayLeaveThisMachine': _whatMayLeave([signIn]),
   'startingModel': {'signIn': signIn, 'model': model},
+  'programsItMayRun': <Object?>[],
+  'programsItNeeds': <Object?>[],
 };
 
 final _claude = _flightRules('claude-team', 'claude-opus-5-5');

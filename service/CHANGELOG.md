@@ -1,6 +1,24 @@
 Each version is tagged `service-vX.Y.Z` on the commit it is built from, and a
 deploy names the tag.
 
+## 0.4.0
+
+Starts only on a fresh logbook: its entries are is_docking_station_api
+0.4.0's and its rules are is_flight_rules 0.5.0's, neither of which reads
+the earlier versions'.
+
+- On is_docking_station_api ^0.4.0: a module gives a translator
+  (`TranslatesRelayedEvents`), and `runDockingStation` takes `translators:`
+  where it took `readings:`. The decisions it writes carry
+  `translatedEvent`, and `no-translator-for-source` and
+  `translator-found-nothing`.
+- On is_flight_rules ^0.5.0: the rules config must be in its shape, since
+  the service reads each mission's rules with `FlightRules.fromJson` and
+  refuses to start on a file it can't read.
+- On the teams_module whose `TeamsEventTranslator` implements the new
+  interface, and on is_effects ^0.14.0 through it. The dependency override
+  for teams_module's vocabulary is gone.
+
 ## 0.3.0
 
 - `bin/close_trajectory.dart`: an operator closes one trajectory from

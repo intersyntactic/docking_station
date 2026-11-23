@@ -3,7 +3,7 @@
 /// decisions.
 library;
 
-import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
+import 'package:is_docking_station_api/is_docking_station_api.dart';
 import 'package:is_logbook_client/is_logbook_client.dart'
     show
         AlreadyRecorded,

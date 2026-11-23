@@ -27,7 +27,7 @@ import 'dart:io';
 
 import 'package:docking_station_service/docking_station_service.dart';
 import 'package:is_logbook_client/is_logbook_client.dart';
-import 'package:is_teams_module/is_teams_module.dart' show TeamsReading;
+import 'package:is_teams_module/is_teams_module.dart' show TeamsEventTranslator;
 
 const _options = {
   'read-socket',
@@ -81,7 +81,7 @@ Future<void> main(List<String> arguments) async {
       subscribe: (kinds) => reader.subscribe(kinds: kinds),
       send: writer.write,
       startKind: startKind,
-      readings: const [TeamsReading()],
+      translators: const [TeamsEventTranslator()],
       missions: addressesLetIn,
       turns: const EverySaidStartsATurn(),
     );

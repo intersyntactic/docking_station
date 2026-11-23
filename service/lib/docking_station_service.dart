@@ -12,14 +12,14 @@
 /// a chat.
 ///
 /// Nothing outside this service imports it. What other repos share with the
-/// docking station is in is_admission_vocabulary.
+/// docking station is in is_docking_station_api.
 library;
 
 import 'dart:convert';
 
 import 'package:checked_json/checked_json.dart'
     show JsonFieldException, JsonObject;
-import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
+import 'package:is_docking_station_api/is_docking_station_api.dart';
 import 'package:is_flight_rules/is_flight_rules.dart';
 
 import 'src/rules.dart';
