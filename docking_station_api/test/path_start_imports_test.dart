@@ -10,7 +10,7 @@ import 'package:test/test.dart';
 
 /// The packages path_start.dart may reach: this one, the two it names,
 /// and what they import.
-const _allowed = {'is_admission_vocabulary', 'is_shapes', 'is_content_id'};
+const _allowed = {'is_docking_station_api', 'is_shapes', 'is_content_id'};
 
 final _directive = RegExp(
   r'''^\s*(?:import|export|part)\s+['"]([^'"]+)['"]''',
@@ -47,7 +47,7 @@ void main() {
       return null;
     }
 
-    final start = libs['is_admission_vocabulary']!.resolve('path_start.dart');
+    final start = libs['is_docking_station_api']!.resolve('path_start.dart');
     final seen = <Uri>{};
     final reached = <String>{};
     final todo = [start];
@@ -66,7 +66,7 @@ void main() {
     expect(reached.difference(_allowed), isEmpty, reason: '$reached');
     // And within this package, only path_start itself.
     final own = seen
-        .where((f) => packageOf(f) == 'is_admission_vocabulary')
+        .where((f) => packageOf(f) == 'is_docking_station_api')
         .map((f) => f.pathSegments.last)
         .toSet();
     expect(own, {'path_start.dart'}, reason: '$own');

@@ -1,7 +1,12 @@
-# is_admission_vocabulary
+# is_docking_station_api
 
-What other parts of intersyntactic import to speak with the docking station,
-and nothing of how it decides.
+The docking station's contract: what other parts of intersyntactic import to
+speak with the docking station, and nothing of how it decides.
+
+Formerly `is_admission_vocabulary`; its 0.3.0 and this package's 0.3.0 are
+the same code. Move a dependency by changing the package name in
+`pubspec.yaml` and `package:is_admission_vocabulary/is_admission_vocabulary.dart`
+to `package:is_docking_station_api/is_docking_station_api.dart` in imports.
 
 The docking station reads events from the logbook in order and decides, for
 each, whether it comes into a mission and on which trajectory. Two sides
@@ -55,12 +60,12 @@ recognise, an extra field included, is null.
 
 ## For the airlock: `path_start.dart`
 
-`package:is_admission_vocabulary/path_start.dart` reads an
+`package:is_docking_station_api/path_start.dart` reads an
 `event-admitted-to-mission` entry only for the trajectory it starts and that
 trajectory's rules. It never decodes the reading, which is what strangers
 sent, and a test walks its import graph to hold that.
 
 ## Versions
 
-Each release is tagged `admission_vocabulary-vX.Y.Z` on the commit it is
+Each release is tagged `docking_station_api-vX.Y.Z` on the commit it is
 published from; see `CHANGELOG.md`.

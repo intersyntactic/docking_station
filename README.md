@@ -15,12 +15,16 @@ effect, so the airlock decides that.
 
 | Folder | Package | What it is | Tags |
 |---|---|---|---|
-| `admission_vocabulary/` | `is_admission_vocabulary`, on pub.dev | What other repos import: the readings a module gives, the decisions recorded, and their logbook encoding | `admission_vocabulary-vX.Y.Z` |
+| `docking_station_api/` | `is_docking_station_api`, on pub.dev (formerly `is_admission_vocabulary`) | The docking station's contract, what other repos import: the readings a module gives, the decisions recorded, and their logbook encoding | `docking_station_api-vX.Y.Z` |
 | `service/` | `docking_station_service`, never published | The docking station itself: how it decides, the rules it runs under, and the program | `service-vX.Y.Z` |
 
 A package other repos import never contains a service. So the service
-takes the vocabulary from pub.dev like every other reader, and nothing
+takes the contract from pub.dev like every other reader, and nothing
 imports the service. A deploy names a `service-vX.Y.Z` tag.
+
+The service still takes it as `is_admission_vocabulary`, because the Teams
+module it builds with does: a `ModuleReading` from one package is not a
+`ModuleReading` from the other, so both move together.
 
 ## How a module takes part: it describes, and decides nothing
 
@@ -29,7 +33,7 @@ station a *reading* (`ModuleReading`). The docking station hands the reading
 every event from the module's relay, in the logbook's order. For each one,
 the reading says what it is. The docking station never reads a module's
 bytes itself, and the module never learns where anything went. The cases a
-reading names are in `admission_vocabulary/README.md`.
+reading names are in `docking_station_api/README.md`.
 
 A reading is a fold. It keeps state of its own, which the docking station
 never looks inside, because some events can only be read with what came
