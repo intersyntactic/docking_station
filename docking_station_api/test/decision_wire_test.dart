@@ -197,9 +197,6 @@ void main() {
         isNull,
       );
     },
-    skip:
-        'is_web_address_vocabulary 0.1.0 reads an address prefix leniently; '
-        '0.1.1 refuses extra fields',
   );
 
   test('a close names the trajectory it closes, and one that names none is '
