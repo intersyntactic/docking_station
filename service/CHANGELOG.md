@@ -1,6 +1,13 @@
 Each version is tagged `service-vX.Y.Z` on the commit it is built from, and a
 deploy names the tag.
 
+## 0.4.1
+
+- On teams_module v0.0.7, the commit the fresh-logbook window deploys, so
+  every build in it locks one teams_module. Its translator reads events as
+  v0.0.5's did: the "Close trajectory" message action it drops already
+  admitted nothing.
+
 ## 0.4.0
 
 Starts only on a fresh logbook: its entries are is_docking_station_api
