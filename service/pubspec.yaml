@@ -2,7 +2,7 @@ name: docking_station_service
 description: >-
   The docking station run as a service: it reads the logbook through its
   read socket and sends each decision through its write socket.
-version: 0.2.0
+version: 0.3.0
 repository: https://github.com/intersyntactic/docking_station
 publish_to: none
 
@@ -11,15 +11,21 @@ environment:
 
 dependencies:
   checked_json: ^0.2.1
-  is_admission_vocabulary: ^0.1.0
+  is_admission_vocabulary: ^0.3.0
   is_conversation_shapes: ^0.8.3
   is_flight_rules: ^0.3.0
-  is_logbook_client: ^0.2.0
+  is_logbook_client: ^0.3.0
   is_shapes: ^0.6.0
   is_teams_module:
     git:
       url: https://github.com/intersyntactic/teams_module.git
       ref: v0.0.2
+
+# teams_module v0.0.2 declares is_admission_vocabulary ^0.1.0, and builds
+# unchanged against 0.3.0, which test/binary_builds_test.dart compiles. Drop
+# this once the pinned teams_module declares ^0.3.0.
+dependency_overrides:
+  is_admission_vocabulary: ^0.3.0
 
 dev_dependencies:
   lints: ^6.1.0

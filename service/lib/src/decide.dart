@@ -57,7 +57,7 @@ AdmissionDecision decide(
   switch (addressed) {
     case PersonAskedToCloseTrajectory():
       return switch (decided.trajectoryOf(addressInExternalSystem)) {
-        final trajectory? => TrajectoryClosed(
+        final trajectory? => TrajectoryClosedBecausePersonAsked(
           event,
           by: by,
           reading: addressed,

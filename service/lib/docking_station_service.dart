@@ -24,6 +24,7 @@ import 'package:is_flight_rules/is_flight_rules.dart';
 
 import 'src/rules.dart';
 
+export 'src/close_by_operator.dart';
 export 'src/decide.dart';
 export 'src/decided.dart';
 export 'src/rules.dart';
