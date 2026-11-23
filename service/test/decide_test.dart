@@ -273,7 +273,7 @@ void main() {
 
     expect(
       close('t1', 'c'),
-      isA<TrajectoryClosed>()
+      isA<TrajectoryClosedBecausePersonAsked>()
           .having((c) => c.trajectory, 'trajectory', started('a'))
           .having((c) => c.mission, 'mission', mission)
           .having((c) => c.reading.from.value, 'who asked', 'teams:t/q'),

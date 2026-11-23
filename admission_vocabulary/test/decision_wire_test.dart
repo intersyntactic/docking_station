@@ -134,6 +134,39 @@ void main() {
     );
   });
 
+  test('a close by an operator names no event and was decided by a person', () {
+    final entry = encodeDecision(
+      TrajectoryClosedByOperator(
+        trajectory: TrajectoryId.parse(_c)!,
+        mission: MissionId.parse(_b)!,
+        operator: OperatorName.parse('nick')!,
+        reason: 'clearing test trajectories',
+      ),
+    );
+    expect(entry.$1, DecisionEntryKind.trajectoryClosed);
+    expect(
+      _text(entry),
+      '{"by":"person","trajectory":"$_c","mission":"$_b",'
+      '"operator":"nick","reason":"clearing test trajectories"}',
+    );
+    expect(
+      () => TrajectoryClosedByOperator(
+        trajectory: TrajectoryId.parse(_c)!,
+        mission: MissionId.parse(_b)!,
+        operator: OperatorName.parse('nick')!,
+        reason: '  ',
+      ),
+      throwsArgumentError,
+    );
+    expect([
+      for (final s in ['nick', '_ops', 'a-b_1']) OperatorName.parse(s),
+    ], everyElement(isNotNull));
+    expect([
+      for (final s in ['', 'Nick', '1nick', 'ni ck', 'a' * 33])
+        OperatorName.parse(s),
+    ], everyElement(isNull));
+  });
+
   // A round trip can't catch a renamed word, since the writer and the
   // reader rename together. These are the words already promised to
   // infra's sender rows, loop_launcher and the airlock.
@@ -226,12 +259,18 @@ void main() {
         ),
         _admitted(const IntoMission(StartsMission()), by),
         MissionEnded(event, by: by, mission: mission),
-        TrajectoryClosed(
+        TrajectoryClosedBecausePersonAsked(
           event,
           by: by,
           reading: closeAsked,
           trajectory: trajectory,
           mission: mission,
+        ),
+        TrajectoryClosedByOperator(
+          trajectory: trajectory,
+          mission: mission,
+          operator: OperatorName.parse('nick')!,
+          reason: 'clearing test trajectories',
         ),
         CloseAskedAtAddressWithNoTrajectory(
           event,
@@ -333,6 +372,13 @@ void main() {
       'reading': closeReading,
       'trajectory': _c,
       'mission': _b,
+    };
+    final byOperator = {
+      'by': 'person',
+      'trajectory': _c,
+      'mission': _b,
+      'operator': 'nick',
+      'reason': 'stuck loop',
     };
     final bad = <(Kind, Map<String, Object?>)>[
       // Something said must say whether it starts a turn, as a bool.
@@ -500,10 +546,29 @@ void main() {
       (DecisionEntryKind.trajectoryClosed, {...closed, 'reading': reading}),
       (DecisionEntryKind.trajectoryClosed, {...closed}..remove('mission')),
       (DecisionEntryKind.trajectoryClosed, {...closed, 'startsTurn': true}),
+      // A close by an operator is decided by a person, names who and why,
+      // and never an event or a reading.
+      (DecisionEntryKind.trajectoryClosed, {...byOperator, 'by': 'rules'}),
+      (DecisionEntryKind.trajectoryClosed, {...byOperator, 'event': _a}),
+      (
+        DecisionEntryKind.trajectoryClosed,
+        {...byOperator, 'reading': closeReading},
+      ),
+      (DecisionEntryKind.trajectoryClosed, {...byOperator}..remove('reason')),
+      (DecisionEntryKind.trajectoryClosed, {...byOperator, 'reason': ' '}),
+      (DecisionEntryKind.trajectoryClosed, {...byOperator, 'reason': 1}),
+      (DecisionEntryKind.trajectoryClosed, {...byOperator, 'operator': 'Nick'}),
+      (DecisionEntryKind.trajectoryClosed, {...byOperator}..remove('mission')),
+      (DecisionEntryKind.trajectoryClosed, {...byOperator, 'extra': 1}),
+      (DecisionEntryKind.missionEnded, {...byOperator}),
     ];
     expect(
       decodeDecision(DecisionEntryKind.trajectoryClosed, bytes(closed)),
       isNotNull,
+    );
+    expect(
+      decodeDecision(DecisionEntryKind.trajectoryClosed, bytes(byOperator)),
+      isA<TrajectoryClosedByOperator>(),
     );
     for (final (kind, json) in bad) {
       expect(decodeDecision(kind, bytes(json)), isNull, reason: '$json');

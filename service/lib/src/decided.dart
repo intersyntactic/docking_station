@@ -69,6 +69,11 @@ final class DecidedSoFar {
   MissionId missionOfTrajectory(TrajectoryId trajectory) =>
       _trajectoryMissions[trajectory]!;
 
+  /// The mission [trajectory] was started in, while it is open. Null for a
+  /// trajectory never started, or closed since, or whose mission ended.
+  MissionId? missionOfOpenTrajectory(TrajectoryId trajectory) =>
+      _trajectoryMissions[trajectory];
+
   /// The trajectory the message [message] in [addressInExternalSystem] was
   /// admitted under: where a change to it goes. Null when it was never
   /// admitted.
@@ -86,7 +91,7 @@ final class DecidedSoFar {
   void take(ObjectId entry, AdmissionDecision decision) {
     if (!_taken.add(entry)) return;
     _tip = entry;
-    _decidedEvents.add(decision.event);
+    if (decision case DecidedAtEvent(:final event)) _decidedEvents.add(event);
     switch (decision) {
       case EventAdmittedToMission():
         _admit(entry, decision);
@@ -104,9 +109,14 @@ final class DecidedSoFar {
               in _trajectoryMissions.entries)
             if (of == mission) trajectory,
         });
-      case TrajectoryClosed(:final reading, :final trajectory):
-        _events[(reading.addressInExternalSystem, reading.key)] =
-            decision.event;
+      case TrajectoryClosedBecausePersonAsked(
+        :final reading,
+        :final trajectory,
+        :final event,
+      ):
+        _events[(reading.addressInExternalSystem, reading.key)] = event;
+        _forget({trajectory});
+      case TrajectoryClosedByOperator(:final trajectory):
         _forget({trajectory});
       case NoReadingForSource() || ReadingFoundNothing():
         break;

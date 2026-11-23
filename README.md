@@ -61,11 +61,21 @@ Every event is decided exactly once and recorded as one entry, on one chain:
 |---|---|
 | `event-admitted-to-mission` | The event comes in, on a trajectory or into a mission |
 | `event-not-admitted-to-mission` | It stays out; `why` says which case |
-| `trajectory-closed` | A person closed a trajectory; the logbook closes its chains |
+| `trajectory-closed` | A person at the address asked to close a trajectory, or an operator closed it; the logbook closes its chains |
 | `mission-ended` | A mission is over; the logbook closes its chains |
 
 The start entry, `docking-station-set-up`, is written once at setup by
 infra's `logbook-setup` user, never by the docking station.
+
+An operator closes a trajectory from outside its conversation with
+`service/bin/close_trajectory.dart`, a command that runs once on the
+docking station's machine. It reads the docking station's decisions, takes
+the trajectory's mission from them, and adds the close to the same chain,
+naming no event. It runs as its own user, which the logbook's sender table
+lets send `trajectory-closed` and nothing else, so no request into the
+running docking station can close anything. The running docking station
+need not stop: whichever of the two sends second is told it is not the
+chain's tip, reads the other's entry, and goes on.
 
 ## What a module never does
 

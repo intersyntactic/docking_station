@@ -10,11 +10,20 @@ import 'package:is_conversation_shapes/is_conversation_shapes.dart'
 import 'package:docking_station_service/docking_station_service.dart';
 import 'package:is_admission_vocabulary/is_admission_vocabulary.dart';
 import 'package:is_logbook_client/is_logbook_client.dart';
-import 'package:is_shapes/is_shapes.dart' show ActorId, DecidedBy;
+import 'package:is_shapes/is_shapes.dart' show ActorId, DecidedBy, TrajectoryId;
 import 'package:test/test.dart';
 
 final ann = ActorId.parse('teams:t/p')!;
 final chat = AddressInExternalSystem.parse('test:chat')!;
+
+/// The event a decision was decided at; every decision these tests send has
+/// one.
+extension on AdmissionDecision {
+  ObjectId get event => switch (this) {
+    DecidedAtEvent(:final event) => event,
+    _ => throw StateError('$this was decided at no event'),
+  };
+}
 
 /// The start entry's kind in these tests. The real one is the service's to
 /// name, so the runner is given it.
@@ -521,5 +530,110 @@ void main() {
         reason: kind,
       );
     }
+  });
+
+  group('an operator closing a trajectory', () {
+    final nick = OperatorName.parse('nick')!;
+
+    Future<OperatorCloseOutcome> close(
+      _Logbook logbook,
+      TrajectoryId trajectory,
+    ) => closeTrajectoryByOperator(
+      subscribe: logbook.subscribe,
+      send: logbook.send,
+      startKind: Kind.parse(_startKind)!,
+      trajectory: trajectory,
+      operator: nick,
+      reason: 'clearing test trajectories',
+    );
+
+    test('closes it while the docking station runs, which reads the close '
+        'back and starts a new trajectory at its address', () async {
+      final logbook = _Logbook();
+      final running = _run(logbook, _Reading());
+      logbook.recordEvent({'said': 'hello', 'key': 'a'});
+      await pumpEventQueue();
+      final started = TrajectoryId.parse(logbook.decisionEntries.single.hex)!;
+
+      final outcome = await close(logbook, started);
+      expect(
+        outcome,
+        isA<OperatorClosedTrajectory>()
+            .having((c) => c.decision.trajectory, 'trajectory', started)
+            .having((c) => c.decision.mission.hex, 'mission', started.hex),
+      );
+      final (previous, _) = logbook.sent.last;
+      expect(previous, logbook.decisionEntries.first);
+
+      logbook.recordEvent({'said': 'again', 'key': 'b'});
+      await pumpEventQueue();
+      await logbook.close();
+      await running;
+
+      final after = logbook.decisions.last as EventAdmittedToMission;
+      expect(
+        after.placement,
+        isA<StartsTrajectory>().having(
+          (p) => p.mission,
+          'in the same mission',
+          isA<InMission>().having((m) => m.mission.hex, 'mission', started.hex),
+        ),
+      );
+    });
+
+    test('reads the chain again when the docking station decided between '
+        'its read and its send', () async {
+      final logbook = _Logbook();
+      final a = logbook.recordEvent({'said': 'hello', 'key': 'a'});
+      logbook.decideElsewhere(_startsChat(a.id, 'a'));
+      final started = TrajectoryId.parse(logbook.decisionEntries.single.hex)!;
+      final b = logbook.recordEvent({'said': 'again', 'key': 'b'});
+      logbook.beforeNextSend = () => logbook.decideElsewhere(
+        SaidStartsNoTurn(
+          b.id,
+          by: DecidedBy.rules,
+          addressInExternalSystem: chat,
+          key: EventKey.parse('b')!,
+        ),
+      );
+
+      expect(await close(logbook, started), isA<OperatorClosedTrajectory>());
+      final [(firstTry, _), (secondTry, _)] = logbook.sent;
+      expect(firstTry, logbook.decisionEntries[0]);
+      expect(secondTry, logbook.decisionEntries[1]);
+      expect(logbook.decisions.last, isA<TrajectoryClosedByOperator>());
+    });
+
+    test('closes nothing that is not open', () async {
+      final logbook = _Logbook();
+      final a = logbook.recordEvent({'said': 'hello', 'key': 'a'});
+      logbook.decideElsewhere(_startsChat(a.id, 'a'));
+      final started = TrajectoryId.parse(logbook.decisionEntries.single.hex)!;
+
+      expect(await close(logbook, started), isA<OperatorClosedTrajectory>());
+      expect(await close(logbook, started), isA<NoOpenTrajectory>());
+      expect(
+        await close(logbook, TrajectoryId.parse('e' * 64)!),
+        isA<NoOpenTrajectory>(),
+      );
+      expect(
+        await close(_Logbook(started: false), started),
+        isA<NoStartEntry>(),
+      );
+      expect(logbook.sent, hasLength(1));
+    });
+
+    test('says a close may or may not be in when the logbook does not '
+        'answer', () async {
+      final logbook = _Logbook()..answer = const Unanswered('timed out');
+      final a = logbook.recordEvent({'said': 'hello', 'key': 'a'});
+      logbook.decideElsewhere(_startsChat(a.id, 'a'));
+      final started = TrajectoryId.parse(logbook.decisionEntries.single.hex)!;
+
+      expect(
+        await close(logbook, started),
+        isA<OperatorCloseMayOrMayNotBeIn>(),
+      );
+    });
   });
 }

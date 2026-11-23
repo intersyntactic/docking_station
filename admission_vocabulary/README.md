@@ -41,13 +41,13 @@ entries carry it, strictly.
 ## Decisions out
 
 The docking station records one entry per event, each of a kind in
-`DecisionEntryKind`:
+`DecisionEntryKind`. An operator's close is the one decision at no event:
 
 | Entry kind | Decision |
 |---|---|
 | `event-admitted-to-mission` | `EventAdmittedToMission`: on a trajectory, starting one, or into a mission |
 | `event-not-admitted-to-mission` | One of `EventNotAdmittedToMission`'s cases; `why` says which |
-| `trajectory-closed` | `TrajectoryClosed`: a person closed a trajectory |
+| `trajectory-closed` | One of `TrajectoryClosed`'s cases: a person at the address asked (`TrajectoryClosedBecausePersonAsked`), or an operator closed it from outside the conversation (`TrajectoryClosedByOperator`) |
 | `mission-ended` | `MissionEnded`: a mission is over |
 
 `decodeDecision` reads any of them back, strictly: an entry it doesn't

@@ -1,6 +1,23 @@
 Each version is tagged `service-vX.Y.Z` on the commit it is built from, and a
 deploy names the tag.
 
+## 0.3.0
+
+- `bin/close_trajectory.dart`: an operator closes one trajectory from
+  outside its conversation, as a `TrajectoryClosedByOperator` on the docking
+  station's own chain. It takes the mission from the docking station's
+  decisions, refuses a trajectory that isn't open, and reads the chain again
+  when the running docking station decided first. Exits 0 closed, 1 not
+  open, 64 bad arguments, 65 not sent, 75 may or may not be in.
+- The docking station takes an operator's close back like any decision: it
+  forgets the trajectory, so the next message at its address starts a new
+  one in the same mission.
+- On is_admission_vocabulary ^0.3.0 and is_logbook_client ^0.3.0. teams_module
+  stays pinned at v0.0.2 under a dependency override, since it declares
+  ^0.1.0 but builds against 0.3.0 unchanged.
+- Must be deployed before any operator's close is written: 0.2.0 reads one
+  as a decision it can't read, and exits 65.
+
 ## 0.2.0
 
 - The engine lives here: `decide`, `DecidedSoFar`, the rules and
