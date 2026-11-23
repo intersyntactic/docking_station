@@ -24,11 +24,6 @@ import 'package:is_docking_station_api/is_docking_station_api.dart';
 
 import 'rules.dart';
 
-/// The kinds of entry the logbook names events by: `event`, and `arrived`,
-/// which entries recorded before the rename keep for good, since an entry's
-/// kind is part of the bytes its hash is taken from.
-final _eventKinds = {Kind.parse('event')!, Kind.parse('arrived')!};
-
 /// Why [runDockingStation] stopped, when starting it again would stop it the
 /// same way: the logbook holds, or refuses, something no restart changes,
 /// such as a second start entry or a decision it can't read.
@@ -44,8 +39,9 @@ final class LogbookNoRestartChanges implements Exception {
 /// Runs the docking station until [subscribe]'s stream ends, which it never
 /// should: the caller treats a return as the logbook going away.
 ///
-/// It reads the logbook from its start, subscribing with [subscribe] to its
-/// events, its decisions and its start entry, the one entry of [startKind].
+/// It reads the logbook from its start, subscribing with [subscribe] to the
+/// events of its [translators]' sources, each the entries of that source's
+/// kind, its decisions and its start entry, the one entry of [startKind].
 /// Each event is translated by the one of [translators] for its source, in
 /// the logbook's order, and each decision is taken into a [DecidedSoFar]. Once
 /// the subscription has caught up, each event after the start entry with no
@@ -86,7 +82,7 @@ Future<void> runDockingStation({
   required DecidesWhichAddressStartsAMission missions,
   required TurnRule turns,
 }) async {
-  final bySource = <String, _TranslatorWithState<Object?>>{};
+  final bySource = <RelayedEventSource, _TranslatorWithState<Object?>>{};
   for (final translator in translators) {
     if (bySource.containsKey(translator.source)) {
       throw ArgumentError.value(
@@ -97,7 +93,12 @@ Future<void> runDockingStation({
     }
     bySource[translator.source] = _TranslatorWithState(translator);
   }
-  if (_eventKinds.contains(startKind) ||
+  // Only its translators' sources' events: the sender table lets one relay
+  // write each kind, so no other kind can carry an event it should take.
+  // A translator added later is given its source's events from the start
+  // entry on, since none of them were subscribed to before.
+  final eventKinds = {for (final source in bySource.keys) source.kind};
+  if (RelayedEventSource.ofKind(startKind) != null ||
       DecisionEntryKind.all.contains(startKind)) {
     throw ArgumentError.value(
       startKind,
@@ -143,13 +144,13 @@ Future<void> runDockingStation({
   }
 
   var caughtUp = false;
-  final kinds = {..._eventKinds, ...DecisionEntryKind.all, startKind};
+  final kinds = {...eventKinds, ...DecisionEntryKind.all, startKind};
   await for (final item in subscribe(kinds)) {
     switch (item) {
-      case Entry(:final id, :final kind) when _eventKinds.contains(kind):
+      case Entry(:final id, :final kind) when eventKinds.contains(kind):
         // Translated whether or not it is decided, so a translator learns
         // from the events before the start entry too.
-        final event = RelayedEvent.read(id, item.body);
+        final event = RelayedEvent.read(id, kind, item.body);
         final translated = switch (event) {
           final event? => bySource[event.source]?.step(event),
           null => null,

@@ -37,6 +37,7 @@ void main() {
       addressInExternalSystem: AddressInExternalSystem.parse('test:chat')!,
       containingAddress: null,
       addressedTo: null,
+      replyEndpoint: null,
       key: EventKey.parse('message:1')!,
       node: UserSaid(
         author: ActorId.parse('teams:t/p')!,
@@ -74,6 +75,7 @@ void main() {
           addressInExternalSystem: chat,
           containingAddress: null,
           addressedTo: null,
+          replyEndpoint: null,
           key: EventKey.parse(key)!,
           node: UserSaid(
             author: ActorId.parse('teams:t/p')!,
@@ -115,6 +117,7 @@ void main() {
       )!,
       containingAddress: channel,
       addressedTo: null,
+      replyEndpoint: null,
       key: EventKey.parse(key)!,
       node: UserSaid(
         author: ActorId.parse('teams:t/p')!,
@@ -169,6 +172,7 @@ void main() {
       )!,
       containingAddress: channel,
       addressedTo: null,
+      replyEndpoint: null,
       key: EventKey.parse(key)!,
       node: UserSaid(
         author: ActorId.parse('teams:t/p')!,
@@ -245,6 +249,7 @@ void main() {
         addressInExternalSystem: thread(t),
         containingAddress: channel,
         addressedTo: null,
+        replyEndpoint: null,
         key: EventKey.parse(key)!,
         node: UserSaid(
           author: ActorId.parse('teams:t/p')!,
@@ -259,6 +264,7 @@ void main() {
         addressInExternalSystem: thread(t),
         containingAddress: channel,
         addressedTo: null,
+        replyEndpoint: null,
         from: ActorId.parse('teams:t/q')!,
         key: EventKey.parse(key)!,
         message: SourceMessageId.parse('$t|card')!,

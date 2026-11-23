@@ -12,6 +12,15 @@ the earlier versions'.
   where it took `readings:`. The decisions it writes carry
   `translatedEvent`, and `no-translator-for-source` and
   `translator-found-nothing`.
+- It subscribes to the events of its translators' sources alone, each the
+  entries of `<source>-event`, so only the relay the sender table lets
+  write that kind can give it an event. An event from a source it has no
+  translator for is never received, so never decided. A translator added
+  later is given its source's events from the start entry on. A body that
+  names its own source is `no-translator-for-source`.
+- An admission that starts a mission or a trajectory writes its translated
+  event's reply endpoint beside its rules, as the contract's
+  `EventAdmittedToMission` does.
 - On is_flight_rules ^0.5.0: the rules config must be in its shape, since
   the service reads each mission's rules with `FlightRules.fromJson` and
   refuses to start on a file it can't read.

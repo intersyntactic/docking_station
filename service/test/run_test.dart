@@ -89,23 +89,16 @@ final class _Logbook {
     return entry;
   }
 
-  /// An event from [source], whose bytes are [what] as JSON, recorded as an
-  /// entry of [kind].
-  Entry recordEvent(
-    Map<String, Object?> what, {
-    String source = 'test',
-    String kind = 'event',
-  }) => add(
-    kind,
-    null,
-    utf8.encode(
-      jsonEncode({
-        'at': '2026-11-16T00:00:00Z',
-        'source': source,
-        'bytes': base64Encode(utf8.encode(jsonEncode(what))),
-      }),
-    ),
-  );
+  /// An event from [source], whose bytes are [what] as JSON, recorded as
+  /// its relay records it.
+  Entry recordEvent(Map<String, Object?> what, {String source = 'test'}) {
+    final (kind, body) = encodeRelayedEvent(
+      RelayedEventSource.parse(source)!,
+      at: DateTime.utc(2026, 11, 16),
+      bytes: Uint8List.fromList(utf8.encode(jsonEncode(what))),
+    );
+    return add(kind.name, null, body);
+  }
 
   /// The start entry, as setup writes it: with no previous, and the first
   /// thing a decision names as previous.
@@ -173,7 +166,7 @@ final class _Translator implements TranslatesRelayedEvents<int> {
   final given = <ObjectId>[];
 
   @override
-  String get source => 'test';
+  RelayedEventSource get source => RelayedEventSource.parse('test')!;
 
   @override
   int get start => 0;
@@ -189,6 +182,7 @@ final class _Translator implements TranslatesRelayedEvents<int> {
           addressInExternalSystem: chat,
           containingAddress: null,
           addressedTo: null,
+          replyEndpoint: null,
           key: EventKey.parse(key)!,
           node: UserSaid(
             author: ann,
@@ -244,6 +238,7 @@ EventAdmittedToMission _startsChat(ObjectId event, String key) =>
         addressInExternalSystem: chat,
         containingAddress: null,
         addressedTo: null,
+        replyEndpoint: null,
         key: EventKey.parse(key)!,
         node: UserSaid(
           author: ann,
@@ -388,13 +383,31 @@ void main() {
     await logbook.close();
   });
 
-  test('an event from a source no translator takes is not admitted, '
+  test('an event from a source no translator takes is never received, so '
+      'never decided', () async {
+    final logbook = _Logbook();
+    logbook.recordEvent({'said': 'hi', 'key': 'x'}, source: 'elsewhere');
+    final translator = _Translator();
+    await _runToEnd(logbook, translator);
+
+    expect(logbook.sent, isEmpty);
+    expect(translator.given, isEmpty);
+  });
+
+  test('an event whose body names its own source is not admitted, '
       'untranslated', () async {
     final logbook = _Logbook();
-    final x = logbook.recordEvent({
-      'said': 'hi',
-      'key': 'x',
-    }, source: 'elsewhere');
+    final x = logbook.add(
+      'test-event',
+      null,
+      utf8.encode(
+        jsonEncode({
+          'at': '2026-11-16T00:00:00Z',
+          'source': 'test',
+          'bytes': base64Encode(utf8.encode('{"said":"hi","key":"x"}')),
+        }),
+      ),
+    );
     final translator = _Translator();
     await _runToEnd(logbook, translator);
 
@@ -402,20 +415,6 @@ void main() {
     expect(decision, isA<NoTranslatorForSource>());
     expect(decision.event, x.id);
     expect(translator.given, isEmpty);
-  });
-
-  test('reads an event recorded before the rename, as `arrived`', () async {
-    final logbook = _Logbook();
-    final translator = _Translator();
-    final old = logbook.recordEvent({
-      'said': 'hello',
-      'key': 'a',
-    }, kind: 'arrived');
-    final now = logbook.recordEvent({'said': 'again', 'key': 'b'});
-    await _runToEnd(logbook, translator);
-
-    expect(translator.given, [old.id, now.id]);
-    expect(logbook.decisions.map((d) => d.event), [old.id, now.id]);
   });
 
   test('an event before the start entry is read but never decided, and the '
@@ -509,8 +508,8 @@ void main() {
 
   test('the start entry\'s kind is no event\'s or decision\'s', () async {
     for (final kind in [
-      'event',
-      'arrived',
+      'test-event',
+      'teams-event',
       'event-admitted-to-mission',
       'event-not-admitted-to-mission',
       'mission-ended',
