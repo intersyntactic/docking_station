@@ -3,7 +3,7 @@ description: >-
   What other parts of intersyntactic import to speak with the docking
   station: the readings a module gives it, the admission decisions it
   records, and how both are encoded in the logbook.
-version: 0.2.0
+version: 0.3.0
 repository: https://github.com/intersyntactic/docking_station/tree/main/admission_vocabulary
 
 environment:

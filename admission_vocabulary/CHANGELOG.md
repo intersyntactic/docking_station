@@ -1,6 +1,24 @@
 Each version is tagged `admission_vocabulary-vX.Y.Z` on the commit it is
 published from.
 
+## 0.3.0
+
+- A trajectory can be closed by an operator, from outside its
+  conversation: `TrajectoryClosedByOperator`, with the operator's
+  `OperatorName` and a reason, decided by a person and at no event. Its entry
+  is a `trajectory-closed`, so the logbook closes the trajectory's chains as
+  for any close:
+  `{"by": "person", "trajectory", "mission", "operator", "reason"}`.
+- `TrajectoryClosed` is sealed, holding `trajectory` and `mission`; a close a
+  person asked for at the address is `TrajectoryClosedBecausePersonAsked`,
+  whose entry is unchanged. A reader matching `TrajectoryClosed(:trajectory)`
+  takes both cases with no change.
+- Breaking: `event` moved off `AdmissionDecision` to the new sealed
+  `DecidedAtEvent`, which every decision but the operator's close is. Read
+  it with `if (d case DecidedAtEvent(:final event))`. A reader on 0.2.x reads
+  an operator's close as no decision at all, so move to 0.3.0 before one is
+  written.
+
 ## 0.2.0
 
 - Depends on the logbook's formats alone: `Kind` from is_logbook_format

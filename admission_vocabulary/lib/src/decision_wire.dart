@@ -19,7 +19,7 @@ import 'reading_wire.dart';
 /// [decision] as the entry the docking station sends: its kind, and its body.
 (Kind, Uint8List) encodeDecision(AdmissionDecision decision) {
   final json = <String, Object?>{
-    'event': decision.event.hex,
+    if (decision case DecidedAtEvent(:final event)) 'event': event.hex,
     'by': decision.by.name,
   };
   switch (decision) {
@@ -40,11 +40,26 @@ import 'reading_wire.dart';
       }
     case MissionEnded(:final mission):
       json['mission'] = mission.hex;
-    case TrajectoryClosed(:final reading, :final trajectory, :final mission):
+    case TrajectoryClosedBecausePersonAsked(
+      :final reading,
+      :final trajectory,
+      :final mission,
+    ):
       json
         ..['reading'] = encodeReading(reading)
         ..['trajectory'] = trajectory.hex
         ..['mission'] = mission.hex;
+    case TrajectoryClosedByOperator(
+      :final trajectory,
+      :final mission,
+      :final operator,
+      :final reason,
+    ):
+      json
+        ..['trajectory'] = trajectory.hex
+        ..['mission'] = mission.hex
+        ..['operator'] = operator.value
+        ..['reason'] = reason;
     case EventNotAdmittedToMission():
       json['why'] = _why(decision);
       if (decision case NotAdmittedKeyedEvent(
@@ -105,9 +120,15 @@ AdmissionDecision? decodeDecision(Kind kind, Uint8List body) {
     return null;
   }
   if (json is! Map<String, Object?>) return null;
-  final event = _read(json['event'], ObjectId.parse);
   final by = _read(json['by'], _decidedBy);
-  if (event == null || by == null) return null;
+  if (by == null) return null;
+  // A close by an operator is the one decision at no event.
+  if (kind == DecisionEntryKind.trajectoryClosed &&
+      !json.containsKey('event')) {
+    return _closedByOperator(by, json);
+  }
+  final event = _read(json['event'], ObjectId.parse);
+  if (event == null) return null;
   if (kind == DecisionEntryKind.eventAdmittedToMission) {
     return _admitted(event, by, json);
   }
@@ -125,7 +146,7 @@ AdmissionDecision? decodeDecision(Kind kind, Uint8List body) {
   return null;
 }
 
-TrajectoryClosed? _closed(
+TrajectoryClosedBecausePersonAsked? _closed(
   ObjectId event,
   DecidedBy by,
   Map<String, Object?> json,
@@ -139,12 +160,37 @@ TrajectoryClosed? _closed(
       json.length != 5) {
     return null;
   }
-  return TrajectoryClosed(
+  return TrajectoryClosedBecausePersonAsked(
     event,
     by: by,
     reading: reading,
     trajectory: trajectory,
     mission: mission,
+  );
+}
+
+TrajectoryClosedByOperator? _closedByOperator(
+  DecidedBy by,
+  Map<String, Object?> json,
+) {
+  final trajectory = _read(json['trajectory'], TrajectoryId.parse);
+  final mission = _read(json['mission'], MissionId.parse);
+  final operator = _read(json['operator'], OperatorName.parse);
+  final reason = json['reason'];
+  if (by != DecidedBy.person ||
+      trajectory == null ||
+      mission == null ||
+      operator == null ||
+      reason is! String ||
+      reason.trim().isEmpty ||
+      json.length != 5) {
+    return null;
+  }
+  return TrajectoryClosedByOperator(
+    trajectory: trajectory,
+    mission: mission,
+    operator: operator,
+    reason: reason,
   );
 }
 

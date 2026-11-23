@@ -120,20 +120,23 @@ final class StartsMission extends MissionPlacement {
   const StartsMission();
 }
 
-/// What the docking station decided about the event recorded at [event], and
-/// [by] whom, so the logbook tells "the rules let it through" from "the
-/// person said yes", as the airlock's does.
+/// What the docking station decided, and [by] whom, so the logbook tells "the
+/// rules let it through" from "the person said yes", as the airlock's does.
 ///
 /// Every entry says who, as `"by": <who>`, where `<who>` is `rules` or
-/// `person`.
+/// `person`. Every decision but [TrajectoryClosedByOperator] is decided at an
+/// event, and is a [DecidedAtEvent].
 sealed class AdmissionDecision {
-  const AdmissionDecision(this.event, {required this.by});
-
-  /// The event decided, by its entry's hash.
-  final ObjectId event;
+  const AdmissionDecision({required this.by});
 
   /// Who decided it.
   final DecidedBy by;
+}
+
+/// A decision about the event recorded at [event].
+sealed class DecidedAtEvent implements AdmissionDecision {
+  /// The event decided, by its entry's hash.
+  ObjectId get event;
 }
 
 /// [event], read as [reading], admitted by [placement].
@@ -168,14 +171,15 @@ sealed class AdmissionDecision {
 /// The reading's [containingAddress] is kept so which mission an address in an
 /// external system is can be rebuilt from decisions alone; its [from], for
 /// rules about who starts turns, such as a cap on turns bots start.
-final class EventAdmittedToMission extends AdmissionDecision {
+final class EventAdmittedToMission extends AdmissionDecision
+    implements DecidedAtEvent {
   /// Throws an [ArgumentError] when [rules] are given for an admission
   /// that starts nothing, or missing for one that starts something; when
   /// [startsTurn] is given for anything but something said, or missing for
   /// something said; and when something said starts a trajectory but no
   /// turn.
   EventAdmittedToMission(
-    super.event, {
+    this.event, {
     required super.by,
     required this.reading,
     required this.placement,
@@ -205,6 +209,8 @@ final class EventAdmittedToMission extends AdmissionDecision {
     }
   }
 
+  @override
+  final ObjectId event;
   final AdmissibleEvent reading;
   final AdmittedPlacement placement;
   final JsonObject? rules;
@@ -245,36 +251,103 @@ final class EventAdmittedToMission extends AdmissionDecision {
 /// The entry, of kind `mission-ended`:
 ///
 ///     {"event": <hex>, "by": <who>, "mission": <id>}
-final class MissionEnded extends AdmissionDecision {
-  const MissionEnded(super.event, {required super.by, required this.mission});
+final class MissionEnded extends AdmissionDecision implements DecidedAtEvent {
+  const MissionEnded(this.event, {required super.by, required this.mission});
 
+  @override
+  final ObjectId event;
   final MissionId mission;
 }
 
-/// [trajectory], in [mission], closed at [event], because a person asked
-/// ([reading]): its loop stops and its users are freed (loop_launcher), and
-/// the logbook takes nothing more on its chains (is_logbook). The next
-/// message at its address starts a new trajectory, in the same mission.
+/// [trajectory], in [mission], closed: its loop stops and its users are freed
+/// (loop_launcher), and the logbook takes nothing more on its chains
+/// (is_logbook). The next message at its address starts a new trajectory, in
+/// the same mission. The case says who closed it.
 ///
-/// Anyone at the address may close it, so it is decided
-/// [DecidedBy.rules], and [reading] says who asked.
-///
-/// The entry, of kind `trajectory-closed`:
-///
-///     {"event": <hex>, "by": <who>, "reading": <reading>,
-///      "trajectory": <id>, "mission": <id>}
-final class TrajectoryClosed extends AdmissionDecision {
-  const TrajectoryClosed(
-    super.event, {
+/// The entry, of kind `trajectory-closed`, is one of the cases' below. The
+/// logbook reads its `trajectory` to close the chains, whichever case it is.
+sealed class TrajectoryClosed extends AdmissionDecision {
+  const TrajectoryClosed({
     required super.by,
-    required this.reading,
     required this.trajectory,
     required this.mission,
   });
 
-  final PersonAskedToCloseTrajectory reading;
   final TrajectoryId trajectory;
   final MissionId mission;
+}
+
+/// Closed at [event], because a person at its address asked ([reading]).
+///
+/// Anyone at the address may close it, so it is decided [DecidedBy.rules],
+/// and [reading] says who asked.
+///
+///     {"event": <hex>, "by": <who>, "reading": <reading>,
+///      "trajectory": <id>, "mission": <id>}
+final class TrajectoryClosedBecausePersonAsked extends TrajectoryClosed
+    implements DecidedAtEvent {
+  const TrajectoryClosedBecausePersonAsked(
+    this.event, {
+    required super.by,
+    required this.reading,
+    required super.trajectory,
+    required super.mission,
+  });
+
+  @override
+  final ObjectId event;
+  final PersonAskedToCloseTrajectory reading;
+}
+
+/// Closed by [operator], a person running the docking station's close
+/// command on its machine, from outside the trajectory's conversation, for
+/// [reason]. No event caused it, so it names none, and it is decided
+/// [DecidedBy.person].
+///
+///     {"by": "person", "trajectory": <id>, "mission": <id>,
+///      "operator": <name>, "reason": <text>}
+final class TrajectoryClosedByOperator extends TrajectoryClosed {
+  /// Throws an [ArgumentError] when [reason] is blank.
+  TrajectoryClosedByOperator({
+    required super.trajectory,
+    required super.mission,
+    required this.operator,
+    required this.reason,
+  }) : super(by: DecidedBy.person) {
+    if (reason.trim().isEmpty) {
+      throw ArgumentError.value(reason, 'reason', 'is blank');
+    }
+  }
+
+  final OperatorName operator;
+
+  /// Why, in the operator's words.
+  final String reason;
+}
+
+/// The name of a person who operates the docking station's machine, as a
+/// user name is written: a lowercase letter or `_`, then up to 31 lowercase
+/// letters, digits, `_` and `-`.
+final class OperatorName {
+  const OperatorName._(this.value);
+
+  final String value;
+
+  static final _name = RegExp(r'^[a-z_][a-z0-9_-]{0,31}$');
+
+  /// [s] as an operator's name; null unless it is one.
+  static OperatorName? parse(String s) =>
+      _name.hasMatch(s) ? OperatorName._(s) : null;
+
+  @override
+  bool operator ==(Object other) =>
+      other is OperatorName && other.value == value;
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toString() => value;
 }
 
 /// [event] not admitted to any mission: nothing comes of it, and nothing
@@ -290,8 +363,12 @@ final class TrajectoryClosed extends AdmissionDecision {
 /// `said-starts-no-turn`, `judged-message-has-no-trajectory`,
 /// `close-asked-at-address-with-no-trajectory` or
 /// `change-to-unadmitted-message`.
-sealed class EventNotAdmittedToMission extends AdmissionDecision {
-  const EventNotAdmittedToMission(super.event, {required super.by});
+sealed class EventNotAdmittedToMission extends AdmissionDecision
+    implements DecidedAtEvent {
+  const EventNotAdmittedToMission(this.event, {required super.by});
+
+  @override
+  final ObjectId event;
 }
 
 /// No reading takes the event's source, or its body is not what a relay
