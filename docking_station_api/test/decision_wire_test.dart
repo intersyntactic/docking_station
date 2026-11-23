@@ -34,8 +34,8 @@ final said = MessageSaid(
   node: UserSaid(author: from, source: message, text: 'hi'),
 );
 
-/// One reading of each case, each reading back as itself.
-final readings = <AdmissibleEvent>[
+/// One translated event of each case, each read back as itself.
+final translatedEvents = <AdmissibleEvent>[
   said,
   MessageChanged(
     addressInExternalSystem: addressInExternalSystem,
@@ -89,7 +89,7 @@ EventAdmittedToMission _admitted(AdmittedPlacement placement, DecidedBy by) =>
     EventAdmittedToMission(
       event,
       by: by,
-      reading: said,
+      translatedEvent: said,
       placement: placement,
       rules: EventAdmittedToMission.starts(placement) ? rules : null,
       startsTurn: true,
@@ -105,7 +105,7 @@ void main() {
     expect(entry.$1, DecisionEntryKind.eventAdmittedToMission);
     expect(
       _text(entry),
-      '{"event":"$_a","by":"rules","reading":{"case":"message-said",'
+      '{"event":"$_a","by":"rules","translatedEvent":{"case":"message-said",'
       '"addressInExternalSystem":"teams:19:x;messageid=1",'
       '"containingAddress":"teams:19:x","addressedTo":"teams:t/bot:app",'
       '"key":"message:1","node":{"shape":"UserSaid","author":"teams:t/p",'
@@ -181,8 +181,8 @@ void main() {
         (jsonDecode(_text(encodeDecision(decision))) as Map)['why'] as String;
     expect(
       [
-        why(NoReadingForSource(event, by: DecidedBy.rules)),
-        why(ReadingFoundNothing(event, by: DecidedBy.rules)),
+        why(NoTranslatorForSource(event, by: DecidedBy.rules)),
+        why(TranslatorFoundNothing(event, by: DecidedBy.rules)),
         for (final decline in [
           AddressNotAdmittedToMission.new,
           SaidStartsNoTurn.new,
@@ -199,8 +199,8 @@ void main() {
           ),
       ],
       [
-        'no-reading-for-source',
-        'reading-found-nothing',
+        'no-translator-for-source',
+        'translator-found-nothing',
         'address-not-admitted-to-mission',
         'said-starts-no-turn',
         'judged-message-has-no-trajectory',
@@ -208,14 +208,18 @@ void main() {
       ],
     );
     expect(
-      encodeReading(closeAsked).string('case'),
+      encodeTranslatedEvent(closeAsked).string('case'),
       'person-asked-to-close-trajectory',
     );
     expect([
-      for (final reading in readings) encodeReading(reading).asUncheckedMap(),
+      for (final translatedEvent in translatedEvents)
+        encodeTranslatedEvent(translatedEvent).asUncheckedMap(),
     ], everyElement(contains('addressInExternalSystem')));
     expect(
-      [for (final reading in readings) encodeReading(reading).string('case')],
+      [
+        for (final translatedEvent in translatedEvents)
+          encodeTranslatedEvent(translatedEvent).string('case'),
+      ],
       [
         'message-said',
         'message-changed',
@@ -224,8 +228,14 @@ void main() {
         'shown-message-judged',
       ],
     );
-    expect(encodeReading(said).string('containingAddress'), 'teams:19:x');
-    expect(encodeReading(said).string('addressedTo'), 'teams:t/bot:app');
+    expect(
+      encodeTranslatedEvent(said).string('containingAddress'),
+      'teams:19:x',
+    );
+    expect(
+      encodeTranslatedEvent(said).string('addressedTo'),
+      'teams:t/bot:app',
+    );
   });
 
   test('every case reads back as what was written, whoever decided it', () {
@@ -236,25 +246,25 @@ void main() {
         _admitted(OnTrajectory(trajectory), by),
         _admitted(StartsTrajectory(InMission(mission)), by),
         _admitted(const StartsTrajectory(StartsMission()), by),
-        for (final reading in readings)
+        for (final translatedEvent in translatedEvents)
           EventAdmittedToMission(
             event,
             by: by,
-            reading: reading,
+            translatedEvent: translatedEvent,
             placement: OnTrajectory(trajectory),
-            startsTurn: reading is MessageSaid ? true : null,
+            startsTurn: translatedEvent is MessageSaid ? true : null,
           ),
         EventAdmittedToMission(
           event,
           by: by,
-          reading: said,
+          translatedEvent: said,
           placement: OnTrajectory(trajectory),
           startsTurn: false,
         ),
         EventAdmittedToMission(
           event,
           by: by,
-          reading: readings[3],
+          translatedEvent: translatedEvents[3],
           placement: IntoMission(InMission(mission)),
         ),
         _admitted(const IntoMission(StartsMission()), by),
@@ -262,7 +272,7 @@ void main() {
         TrajectoryClosedBecausePersonAsked(
           event,
           by: by,
-          reading: closeAsked,
+          translatedEvent: closeAsked,
           trajectory: trajectory,
           mission: mission,
         ),
@@ -278,8 +288,8 @@ void main() {
           addressInExternalSystem: addressInExternalSystem,
           key: key,
         ),
-        NoReadingForSource(event, by: by),
-        ReadingFoundNothing(event, by: by),
+        NoTranslatorForSource(event, by: by),
+        TranslatorFoundNothing(event, by: by),
         DuplicateEvent(
           event,
           by: by,
@@ -326,7 +336,7 @@ void main() {
   test('anything else reads as null', () {
     Uint8List bytes(Map<String, Object?> json) =>
         Uint8List.fromList(utf8.encode(jsonEncode(json)));
-    final reading = {
+    final translatedEvent = {
       'case': 'message-said',
       'addressInExternalSystem': 'teams:c',
       'key': 'k',
@@ -340,7 +350,7 @@ void main() {
     final good = {
       'event': _a,
       'by': 'rules',
-      'reading': reading,
+      'translatedEvent': translatedEvent,
       'trajectory': _c,
       'startsTurn': true,
     };
@@ -359,17 +369,19 @@ void main() {
       EventAdmittedToMission(
         event,
         by: DecidedBy.rules,
-        reading: readings.whereType<ActorsJoinedAddress>().single,
+        translatedEvent: translatedEvents
+            .whereType<ActorsJoinedAddress>()
+            .single,
         placement: IntoMission(InMission(MissionId.parse(_b)!)),
       ),
     );
     final join = jsonDecode(utf8.decode(joinBody)) as Map<String, Object?>;
     expect(decodeDecision(joinKind, bytes(join)), isNotNull);
-    final closeReading = encodeReading(closeAsked).asUncheckedMap();
+    final closeAskedJson = encodeTranslatedEvent(closeAsked).asUncheckedMap();
     final closed = {
       'event': _a,
       'by': 'rules',
-      'reading': closeReading,
+      'translatedEvent': closeAskedJson,
       'trajectory': _c,
       'mission': _b,
     };
@@ -394,66 +406,72 @@ void main() {
       (joinKind, {...join, 'startsTurn': true}),
       (DecisionEntryKind.eventNotAdmittedToMission, good),
       (DecisionEntryKind.eventAdmittedToMission, {...good, 'extra': 1}),
-      (DecisionEntryKind.eventAdmittedToMission, {...good}..remove('reading')),
       (
         DecisionEntryKind.eventAdmittedToMission,
-        {...good, 'reading': 'message-said'},
+        {...good}..remove('translatedEvent'),
+      ),
+      (
+        DecisionEntryKind.eventAdmittedToMission,
+        {...good, 'translatedEvent': 'message-said'},
       ),
       (
         DecisionEntryKind.eventAdmittedToMission,
         {
           ...good,
-          'reading': {...reading, 'extra': 1},
+          'translatedEvent': {...translatedEvent, 'extra': 1},
         },
       ),
       (
         DecisionEntryKind.eventAdmittedToMission,
         {
           ...good,
-          'reading': {...reading}..remove('key'),
+          'translatedEvent': {...translatedEvent}..remove('key'),
         },
       ),
       (
         DecisionEntryKind.eventAdmittedToMission,
         {
           ...good,
-          'reading': {...reading, 'case': 'x'},
+          'translatedEvent': {...translatedEvent, 'case': 'x'},
         },
       ),
       (
         DecisionEntryKind.eventAdmittedToMission,
         {
           ...good,
-          'reading': {...reading, 'from': 'teams:p'},
+          'translatedEvent': {...translatedEvent, 'from': 'teams:p'},
         },
       ),
       (
         DecisionEntryKind.eventAdmittedToMission,
         {
           ...good,
-          'reading': {...reading, 'containingAddress': null},
+          'translatedEvent': {...translatedEvent, 'containingAddress': null},
         },
       ),
       (
         DecisionEntryKind.eventAdmittedToMission,
         {
           ...good,
-          'reading': {...reading, 'addressedTo': null},
+          'translatedEvent': {...translatedEvent, 'addressedTo': null},
         },
       ),
       (
         DecisionEntryKind.eventAdmittedToMission,
         {
           ...good,
-          'reading': {...reading, 'addressedTo': 'not an actor'},
+          'translatedEvent': {
+            ...translatedEvent,
+            'addressedTo': 'not an actor',
+          },
         },
       ),
       (
         DecisionEntryKind.eventAdmittedToMission,
         {
           ...good,
-          'reading': {
-            ...reading,
+          'translatedEvent': {
+            ...translatedEvent,
             'node': {'shape': 'Edited', 'text': 'hi'},
           },
         },
@@ -462,7 +480,7 @@ void main() {
         DecisionEntryKind.eventAdmittedToMission,
         {
           ...good,
-          'reading': {
+          'translatedEvent': {
             'case': 'actors-joined-address',
             'addressInExternalSystem': 'teams:c',
             'key': 'k',
@@ -474,7 +492,7 @@ void main() {
         DecisionEntryKind.eventAdmittedToMission,
         {
           ...good,
-          'reading': {
+          'translatedEvent': {
             'case': 'shown-message-judged',
             'addressInExternalSystem': 'teams:c',
             'key': 'k',
@@ -509,7 +527,7 @@ void main() {
         {
           'event': _a,
           'by': 'rules',
-          'why': 'no-reading-for-source',
+          'why': 'no-translator-for-source',
           'key': 'k',
         },
       ),
@@ -519,7 +537,7 @@ void main() {
       ),
       (
         DecisionEntryKind.eventNotAdmittedToMission,
-        {'event': _a, 'why': 'no-reading-for-source'},
+        {'event': _a, 'why': 'no-translator-for-source'},
       ),
       (DecisionEntryKind.missionEnded, {'event': _a, 'by': 'rules'}),
       (
@@ -536,23 +554,26 @@ void main() {
       ),
       (
         Kind.parse('event')!,
-        {'event': _a, 'by': 'rules', 'why': 'no-reading-for-source'},
+        {'event': _a, 'by': 'rules', 'why': 'no-translator-for-source'},
       ),
       // A close is never admitted, and only a close closes a trajectory.
       (
         DecisionEntryKind.eventAdmittedToMission,
-        {...good, 'reading': closeReading}..remove('startsTurn'),
+        {...good, 'translatedEvent': closeAskedJson}..remove('startsTurn'),
       ),
-      (DecisionEntryKind.trajectoryClosed, {...closed, 'reading': reading}),
+      (
+        DecisionEntryKind.trajectoryClosed,
+        {...closed, 'translatedEvent': translatedEvent},
+      ),
       (DecisionEntryKind.trajectoryClosed, {...closed}..remove('mission')),
       (DecisionEntryKind.trajectoryClosed, {...closed, 'startsTurn': true}),
       // A close by an operator is decided by a person, names who and why,
-      // and never an event or a reading.
+      // and never an event or a translated event.
       (DecisionEntryKind.trajectoryClosed, {...byOperator, 'by': 'rules'}),
       (DecisionEntryKind.trajectoryClosed, {...byOperator, 'event': _a}),
       (
         DecisionEntryKind.trajectoryClosed,
-        {...byOperator, 'reading': closeReading},
+        {...byOperator, 'translatedEvent': closeAskedJson},
       ),
       (DecisionEntryKind.trajectoryClosed, {...byOperator}..remove('reason')),
       (DecisionEntryKind.trajectoryClosed, {...byOperator, 'reason': ' '}),

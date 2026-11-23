@@ -15,7 +15,7 @@ effect, so the airlock decides that.
 
 | Folder | Package | What it is | Tags |
 |---|---|---|---|
-| `docking_station_api/` | `is_docking_station_api`, on pub.dev (formerly `is_admission_vocabulary`) | The docking station's contract, what other repos import: the readings a module gives, the decisions recorded, and their logbook encoding | `docking_station_api-vX.Y.Z` |
+| `docking_station_api/` | `is_docking_station_api`, on pub.dev (formerly `is_admission_vocabulary`) | The docking station's contract, what other repos import: the events a module translates, the decisions recorded, and their logbook encoding | `docking_station_api-vX.Y.Z` |
 | `service/` | `docking_station_service`, never published | The docking station itself: how it decides, the rules it runs under, and the program | `service-vX.Y.Z` |
 
 A package other repos import never contains a service. So the service
@@ -23,24 +23,26 @@ takes the contract from pub.dev like every other reader, and nothing
 imports the service. A deploy names a `service-vX.Y.Z` tag.
 
 The service still takes it as `is_admission_vocabulary`, because the Teams
-module it builds with does: a `ModuleReading` from one package is not a
-`ModuleReading` from the other, so both move together.
+module it builds with does: a class from one package is a different type
+from the same-named class in the other, so both move together.
 
 ## How a module takes part: it describes, and decides nothing
 
 A module, such as the Teams module, takes part only by giving the docking
-station a *reading* (`ModuleReading`). The docking station hands the reading
-every event from the module's relay, in the logbook's order. For each one,
-the reading says what it is. The docking station never reads a module's
-bytes itself, and the module never learns where anything went. The cases a
-reading names are in `docking_station_api/README.md`.
+station a *translator* (`TranslatesRelayedEvents`). The docking station hands
+the translator every event from the module's relay, in the logbook's order.
+For each one, the translator says what it is in the docking station's terms.
+The docking station never reads a module's bytes itself, and the module never
+learns where anything went. The cases a translated event names are in
+`docking_station_api/README.md`.
 
-A reading is a fold. It keeps state of its own, which the docking station
-never looks inside, because some events can only be read with what came
-before. A quoted message's author is known from earlier events, and an edit
-has to be matched to the message it edits. On every start the docking
-station folds again from the logbook's beginning, so a reading must give the
-same answer for the same events in the same order.
+A translator gives one answer per event and carries state from one event to
+the next, which the docking station never looks inside, because some events
+can only be translated with what came before. A quoted message's author is
+known from earlier events, and an edit has to be matched to the message it
+edits. On every start the docking station steps it again from the logbook's
+beginning, so a translator must give the same answer for the same events in
+the same order.
 
 ## Missions and trajectories
 

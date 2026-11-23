@@ -1,8 +1,8 @@
 // readTrajectoryStart reads the `event-admitted-to-mission` wire on its own,
-// apart from decodeDecision, so the airlock never decodes a reading. Two
-// readers of one wire can drift apart: this holds them together over every
+// apart from decodeDecision, so the airlock never decodes a translated event.
+// Two readers of one wire can drift apart: this holds them together over every
 // admitted case the docking station writes, and holds the narrow reader as
-// strict as the full one everywhere outside `reading`.
+// strict as the full one everywhere outside `translatedEvent`.
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -13,7 +13,7 @@ import 'package:is_shapes/is_shapes.dart'
     show DecidedBy, MissionId, TrajectoryId;
 import 'package:test/test.dart';
 
-import 'decision_wire_test.dart' show event, readings, rules, said;
+import 'decision_wire_test.dart' show event, translatedEvents, rules, said;
 
 final _b = 'b' * 64, _c = 'c' * 64;
 
@@ -35,24 +35,24 @@ void main() {
     final mission = MissionId.parse(_b)!;
     final trajectory = TrajectoryId.parse(_c)!;
     EventAdmittedToMission admitted(
-      AdmissibleEvent reading,
+      AdmissibleEvent translatedEvent,
       AdmittedPlacement placement, {
       bool startsTurn = true,
     }) => EventAdmittedToMission(
       event,
       by: DecidedBy.person,
-      reading: reading,
+      translatedEvent: translatedEvent,
       placement: placement,
       rules: EventAdmittedToMission.starts(placement) ? rules : null,
-      startsTurn: reading is MessageSaid ? startsTurn : null,
+      startsTurn: translatedEvent is MessageSaid ? startsTurn : null,
     );
     final decisions = [
-      for (final reading in readings)
-        if (reading is ActorsJoinedAddress) ...[
-          admitted(reading, IntoMission(InMission(mission))),
-          admitted(reading, const IntoMission(StartsMission())),
+      for (final translatedEvent in translatedEvents)
+        if (translatedEvent is ActorsJoinedAddress) ...[
+          admitted(translatedEvent, IntoMission(InMission(mission))),
+          admitted(translatedEvent, const IntoMission(StartsMission())),
         ] else
-          admitted(reading, OnTrajectory(trajectory)),
+          admitted(translatedEvent, OnTrajectory(trajectory)),
       admitted(said, OnTrajectory(trajectory), startsTurn: false),
       admitted(said, StartsTrajectory(InMission(mission))),
       admitted(said, const StartsTrajectory(StartsMission())),
@@ -89,7 +89,7 @@ void main() {
     final decision = EventAdmittedToMission(
       event,
       by: DecidedBy.rules,
-      reading: said,
+      translatedEvent: said,
       placement: const StartsTrajectory(StartsMission()),
       rules: rules,
       startsTurn: true,
@@ -103,7 +103,7 @@ void main() {
     final good = {
       'event': 'a' * 64,
       'by': 'rules',
-      'reading': {'case': 'message-said', 'node': 'never decoded'},
+      'translatedEvent': {'case': 'message-said', 'node': 'never decoded'},
       'startsTrajectory': true,
       'startsMission': true,
       'rules': {'tools': 'all'},
@@ -128,10 +128,13 @@ void main() {
       _raw('event-admitted-to-mission', {...good, 'extra': 1}),
       _raw('event-admitted-to-mission', {...good, 'event': 'x'}),
       _raw('event-admitted-to-mission', {...good, 'by': 'nobody'}),
-      _raw('event-admitted-to-mission', {...good, 'reading': 'message-said'}),
       _raw('event-admitted-to-mission', {
         ...good,
-        'reading': <String, Object?>{},
+        'translatedEvent': 'message-said',
+      }),
+      _raw('event-admitted-to-mission', {
+        ...good,
+        'translatedEvent': <String, Object?>{},
       }),
       _raw('event-admitted-to-mission', {...good}..remove('rules')),
       _raw('event-admitted-to-mission', {...good, 'rules': 'all'}),
@@ -144,7 +147,7 @@ void main() {
       _raw('event-admitted-to-mission', {...good, 'startsTurn': false}),
       _raw('event-admitted-to-mission', {
         ...good,
-        'reading': {'case': 'actors-joined-address'},
+        'translatedEvent': {'case': 'actors-joined-address'},
       }),
       _raw('event-admitted-to-mission', {...good, 'mission': _b}),
       _raw('event-admitted-to-mission', {...good, 'startsTrajectory': 1}),

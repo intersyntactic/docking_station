@@ -1,5 +1,5 @@
-/// A reading as the `event-admitted-to-mission` entry carries it, and back,
-/// read strictly, since it is our own wire.
+/// A translated event as the `event-admitted-to-mission` entry carries it, and
+/// back, read strictly, since it is our own wire.
 ///
 /// The nodes inside travel in their own packages' map form,
 /// `{"shape": <class name>, ...its fields}`, each under a field of its own,
@@ -14,19 +14,19 @@ import 'package:is_conversation_shapes/is_conversation_shapes.dart'
     show SourceMessageId, UserSaid, WhatChanged;
 import 'package:is_shapes/is_shapes.dart' show ActorId;
 
-import 'reading.dart';
+import 'translated_event.dart';
 
-/// Every node shape a reading can carry, by the field it travels in, as
-/// each node's package names them. A `shape` is one namespace across every
+/// Every node shape a translated event can carry, by the field it travels in,
+/// as each node's package names them. A `shape` is one namespace across every
 /// package whose nodes travel in map form, so no two of these may share a
 /// name, and the docking station checks that none do.
-const readingNodeShapes = <String, Set<String>>{
+const translatedEventNodeShapes = <String, Set<String>>{
   'node': {UserSaid.shapeName},
   'change': WhatChanged.shapeNames,
   'verdict': VerdictOnShownMessage.shapeNames,
 };
 
-/// [reading] as JSON:
+/// [event] as JSON:
 ///
 ///     {"case": <case>, "addressInExternalSystem": <id>,
 ///      "containingAddress": <id>?, "addressedTo": <actor>?, "key": <key>,
@@ -38,13 +38,13 @@ const readingNodeShapes = <String, Set<String>>{
 /// `"joiners"`; `shown-message-judged`, with `"from"`, `"to"` and
 /// `"verdict"`, a [VerdictOnShownMessage]; `person-asked-to-close-trajectory`,
 /// with `"from"` and `"message"`.
-JsonObject encodeReading(AddressedEvent reading) => JsonObject.of({
-  'case': _case(reading),
-  'addressInExternalSystem': reading.addressInExternalSystem.value,
-  'containingAddress': ?reading.containingAddress?.value,
-  'addressedTo': ?reading.addressedTo?.value,
-  'key': reading.key.value,
-  ...switch (reading) {
+JsonObject encodeTranslatedEvent(AddressedEvent event) => JsonObject.of({
+  'case': _case(event),
+  'addressInExternalSystem': event.addressInExternalSystem.value,
+  'containingAddress': ?event.containingAddress?.value,
+  'addressedTo': ?event.addressedTo?.value,
+  'key': event.key.value,
+  ...switch (event) {
     MessageSaid(:final node) => {'node': node.toJson()},
     MessageChanged(:final from, :final message, :final change) => {
       'from': ?from?.value,
@@ -67,7 +67,7 @@ JsonObject encodeReading(AddressedEvent reading) => JsonObject.of({
   },
 });
 
-String _case(AddressedEvent reading) => switch (reading) {
+String _case(AddressedEvent event) => switch (event) {
   MessageSaid() => 'message-said',
   MessageChanged() => 'message-changed',
   ActorsJoinedAddress() => 'actors-joined-address',
@@ -75,10 +75,10 @@ String _case(AddressedEvent reading) => switch (reading) {
   PersonAskedToCloseTrajectory() => 'person-asked-to-close-trajectory',
 };
 
-/// [json] read back as the reading [encodeReading] wrote. A
+/// [json] read back as the translated event [encodeTranslatedEvent] wrote. A
 /// [FormatException] for anything it doesn't write: an unknown case, a
 /// field missing, extra or malformed, a node its package won't read.
-AddressedEvent decodeReading(JsonObject json) {
+AddressedEvent decodeTranslatedEvent(JsonObject json) {
   final addressInExternalSystem = _parse(
     json,
     'addressInExternalSystem',
@@ -94,7 +94,7 @@ AddressedEvent decodeReading(JsonObject json) {
   ActorId? from() =>
       json.has('from') ? _parse(json, 'from', ActorId.parse) : null;
 
-  final (reading, fields) = switch (json.string('case')) {
+  final (event, fields) = switch (json.string('case')) {
     'message-said' => (
       MessageSaid(
         addressInExternalSystem: addressInExternalSystem,
@@ -156,7 +156,9 @@ AddressedEvent decodeReading(JsonObject json) {
       ),
       const {'from', 'message'},
     ),
-    final other => throw FormatException('`case` is not a reading: $other'),
+    final other => throw FormatException(
+      '`case` is not a translated event: $other',
+    ),
   };
   for (final field in json.keys) {
     if (!{
@@ -167,10 +169,10 @@ AddressedEvent decodeReading(JsonObject json) {
       'key',
       ...fields,
     }.contains(field)) {
-      throw FormatException('`$field` is not a field of a reading');
+      throw FormatException('`$field` is not a field of a translated event');
     }
   }
-  return reading;
+  return event;
 }
 
 /// [json]'s [field], a string, parsed by [parse]; a [JsonFieldException]

@@ -2,6 +2,29 @@ Each version is tagged `docking_station_api-vX.Y.Z` on the commit it is
 published from. Versions up to 0.3.0 were published as
 `is_admission_vocabulary` and tagged `admission_vocabulary-vX.Y.Z`.
 
+## 0.4.0
+
+Breaking, in code and in the logbook. Published only into a fresh logbook:
+a reader on 0.4.0 refuses 0.3.0's entries, and a reader on 0.3.0 refuses
+0.4.0's.
+
+- A module's "reading" is its translator, since it turns each of its
+  relay's events into the docking station's terms, carrying state from one
+  event to the next:
+  - `ModuleReading<S>` is `TranslatesRelayedEvents<S>`.
+  - `EventReading` is `TranslatedEvent`.
+  - `encodeReading` and `decodeReading` are `encodeTranslatedEvent` and
+    `decodeTranslatedEvent`; `readingNodeShapes` is
+    `translatedEventNodeShapes`.
+  - `NoReadingForSource` is `NoTranslatorForSource`, and
+    `ReadingFoundNothing` is `TranslatorFoundNothing`.
+  - `EventAdmittedToMission.reading` and
+    `TrajectoryClosedBecausePersonAsked.reading` are `.translatedEvent`.
+- In the entries: the `reading` field of `event-admitted-to-mission` and
+  `trajectory-closed` is `translatedEvent`, and the `why`s
+  `no-reading-for-source` and `reading-found-nothing` are
+  `no-translator-for-source` and `translator-found-nothing`.
+
 ## 0.3.0
 
 - Published as `is_docking_station_api`, the same code as

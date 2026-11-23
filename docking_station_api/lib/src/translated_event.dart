@@ -1,11 +1,12 @@
-/// The reading contract: what a module gives the docking station, and all it
-/// gives.
+/// The translation contract: what a module gives the docking station, and all
+/// it gives.
 ///
 /// A module takes part only by describing. The docking station hands its
-/// [ModuleReading] every event from the module's relay, in the logbook's
-/// order, and for each the reading says what it is: a [EventReading]. The
-/// docking station never reads a module's bytes itself, and the module never
-/// learns which trajectory anything went to.
+/// [TranslatesRelayedEvents] every event from the module's relay, in the
+/// logbook's order, and for each the translator says what it is in the
+/// docking station's terms: a [TranslatedEvent]. The docking station never
+/// reads a module's bytes itself, and the module never learns which
+/// trajectory anything went to.
 library;
 
 import 'dart:convert';
@@ -18,9 +19,10 @@ import 'package:is_conversation_shapes/is_conversation_shapes.dart'
 import 'package:is_content_id/is_content_id.dart' show ObjectId;
 import 'package:is_shapes/is_shapes.dart' show ActorId;
 
-/// One event, as the docking station gives it to a reading: its entry's hash,
-/// and what its relay recorded, `{"at", "source", "bytes"}`, as an entry of
-/// kind `event`, or `arrived` if it was recorded before that kind was named.
+/// One event, as the docking station gives it to a translator: its entry's
+/// hash, and what its relay recorded, `{"at", "source", "bytes"}`, as an entry
+/// of kind `event`, or `arrived` if it was recorded before that kind was
+/// named.
 ///
 /// Only [RelayedEvent.read] makes one, from the entry's body as recorded.
 final class RelayedEvent {
@@ -74,26 +76,28 @@ final class RelayedEvent {
   }
 }
 
-/// A module's reading of its relay's events, as a fold: the docking station
-/// starts from [start] and calls [step] with each event from [source], in
-/// the logbook's order, keeping only the state it returns.
+/// A module's translator of its relay's events into the docking station's
+/// terms: one [TranslatedEvent] per event, carrying state from one event to
+/// the next. The docking station starts from [start] and calls [step] with
+/// each event from [source], in the logbook's order, keeping only the state
+/// it returns.
 ///
 /// [S] is the module's own, and the docking station never looks inside it. It
-/// is there for what a reading needs from earlier events: a quote's
+/// is there for what a translation needs from earlier events: a quote's
 /// author, the message an edit or delete is of, who an earlier join brought
-/// in. On every start the docking station folds again from the logbook's
+/// in. On every start the docking station steps again from the logbook's
 /// beginning, already-admitted events included, so [step] must give the
 /// same answer for the same events in the same order, and must not change
 /// the state it is given.
-abstract interface class ModuleReading<S> {
-  /// The [RelayedEvent.source] whose events this reads.
+abstract interface class TranslatesRelayedEvents<S> {
+  /// The [RelayedEvent.source] whose events this translates.
   String get source;
 
   /// The state before any event.
   S get start;
 
-  /// [event] read, after every earlier one from [source] has been.
-  (S, EventReading) step(S state, RelayedEvent event);
+  /// [event] translated, after every earlier one from [source] has been.
+  (S, TranslatedEvent) step(S state, RelayedEvent event);
 }
 
 /// What one event is: something said ([MessageSaid]), a change to an
@@ -101,13 +105,13 @@ abstract interface class ModuleReading<S> {
 /// ([ActorsJoinedAddress]), a person's verdict on something the agent showed
 /// ([ShownMessageJudged]), a person asking to close a trajectory
 /// ([PersonAskedToCloseTrajectory]), or nothing to admit ([NothingToAdmit]).
-sealed class EventReading {
-  const EventReading();
+sealed class TranslatedEvent {
+  const TranslatedEvent();
 }
 
 /// Nothing to admit: a typing indicator, a reaction the module does not
 /// carry, an activity it cannot read.
-final class NothingToAdmit extends EventReading {
+final class NothingToAdmit extends TranslatedEvent {
   const NothingToAdmit();
 }
 
@@ -115,7 +119,7 @@ final class NothingToAdmit extends EventReading {
 /// once. Either an [AdmissibleEvent], which goes under a trajectory, or a
 /// [PersonAskedToCloseTrajectory], which closes one and is admitted under
 /// none.
-sealed class AddressedEvent extends EventReading {
+sealed class AddressedEvent extends TranslatedEvent {
   const AddressedEvent({
     required this.addressInExternalSystem,
     required this.containingAddress,
@@ -131,7 +135,7 @@ sealed class AddressedEvent extends EventReading {
   /// itself does.
   ///
   /// It is what the outside groups its addresses by: a channel is a
-  /// mission and each of its threads a trajectory. The reading names it so
+  /// mission and each of its threads a trajectory. The translator names it so
   /// the docking station never reads a module's ids to find it.
   final AddressInExternalSystem? containingAddress;
 
@@ -165,10 +169,10 @@ sealed class AdmissibleEvent extends AddressedEvent {
 /// Whether it starts a turn is the docking station's decision, under the
 /// trajectory's rules.
 ///
-/// The reading builds [node] because only its fold holds what that takes,
-/// such as who wrote a message it quotes. Someone the module can't name has
-/// said nothing it
-/// can admit, since a [UserSaid] always has an author.
+/// The translator builds [node] because only its state holds what that
+/// takes, such as who wrote a message it quotes. Someone the module can't
+/// name has said nothing it can admit, since a [UserSaid] always has an
+/// author.
 final class MessageSaid extends AdmissibleEvent {
   const MessageSaid({
     required super.addressInExternalSystem,

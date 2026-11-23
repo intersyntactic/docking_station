@@ -1,9 +1,9 @@
 name: is_docking_station_api
 description: >-
   The docking station's contract: what other parts of intersyntactic import
-  to speak with it. The readings a module gives it, the decisions it
-  records, and how both are encoded in the logbook.
-version: 0.3.0
+  to speak with it. The events a module translates for it, the decisions
+  it records, and how both are encoded in the logbook.
+version: 0.4.0
 repository: https://github.com/intersyntactic/docking_station/tree/main/docking_station_api
 
 environment:

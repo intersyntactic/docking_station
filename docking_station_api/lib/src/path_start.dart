@@ -3,7 +3,7 @@
 /// enforces each trajectory's rules and learns them from the logbook (RULINGS,
 /// "the loop launcher records itself").
 ///
-/// The entry's `reading` is what strangers sent, made into a node. The
+/// The entry's `translatedEvent` is what strangers sent, made into a node. The
 /// airlock has no need of it, so it is checked to be an object naming its
 /// case and is never decoded: nothing here imports the packages that
 /// decode it, and a test holds that. Every other field is read as
@@ -90,7 +90,7 @@ AdmittedTrajectoryEntry<R> readTrajectoryStart<R>(
   }
   if (decoded is! Map<String, Object?>) return unreadable('not an object');
   final json = decoded;
-  final fields = {'event', 'by', 'reading'};
+  final fields = {'event', 'by', 'translatedEvent'};
 
   final event = switch (json['event']) {
     final String hex => ObjectId.parse(hex),
@@ -102,11 +102,13 @@ AdmittedTrajectoryEntry<R> readTrajectoryStart<R>(
     _ => null,
   };
   if (by == null) return unreadable('`by` is not who decided');
-  final readingCase = switch (json['reading']) {
-    {'case': final String readingCase} => readingCase,
+  final eventCase = switch (json['translatedEvent']) {
+    {'case': final String eventCase} => eventCase,
     _ => null,
   };
-  if (readingCase == null) return unreadable('`reading` names no case');
+  if (eventCase == null) {
+    return unreadable('`translatedEvent` names no case');
+  }
 
   // Where it goes: under a trajectory, or into a mission, starting a trajectory
   // or not.
@@ -164,7 +166,7 @@ AdmittedTrajectoryEntry<R> readTrajectoryStart<R>(
 
   // Whether it starts a turn, exactly for something said, and never
   // false on a trajectory's start.
-  final said = readingCase == 'message-said';
+  final said = eventCase == 'message-said';
   if (json.containsKey('startsTurn') != said) {
     return unreadable('`startsTurn` not given exactly for something said');
   }

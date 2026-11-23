@@ -6,8 +6,8 @@
 /// trajectory, or [EventNotAdmittedToMission], saying why. A decline is
 /// recorded as well as an admission, so on a restart the docking station reads
 /// back what it decided rather than deciding again. An event with no decision
-/// is one it had not reached, never one it turned away, so a reading or a rule
-/// changed since cannot admit an old event it once kept out.
+/// is one it had not reached, never one it turned away, so a translator or a
+/// rule changed since cannot admit an old event it once kept out.
 ///
 /// The decisions are one chain in the logbook, each naming the one before it
 /// as previous. The logbook refuses an entry whose previous is not its
@@ -21,7 +21,7 @@
 ///
 /// Each decision holds what it was decided on (the address, the
 /// event's key, the message), so the docking station's state is rebuilt from
-/// its decisions alone, whatever a module's reading would make of an old
+/// its decisions alone, whatever a module's translator would make of an old
 /// event now.
 library;
 
@@ -32,7 +32,7 @@ import 'package:is_logbook_format/is_logbook_format.dart' show Kind, ObjectId;
 import 'package:is_shapes/is_shapes.dart'
     show ActorId, DecidedBy, MissionId, TrajectoryId;
 
-import 'reading.dart';
+import 'translated_event.dart';
 
 /// The kinds of entry the docking station sends, one per event. Its user's
 /// row in the logbook's sender table allows these four and nothing else.
@@ -139,14 +139,15 @@ sealed class DecidedAtEvent implements AdmissionDecision {
   ObjectId get event;
 }
 
-/// [event], read as [reading], admitted by [placement].
+/// [event], translated as [translatedEvent], admitted by [placement].
 ///
 /// The entry, of kind `event-admitted-to-mission`:
 ///
-///     {"event": <hex>, "by": <who>, "reading": <reading>,
+///     {"event": <hex>, "by": <who>, "translatedEvent": <translated event>,
 ///      ...the placement, "rules": <rules>?, "startsTurn": <bool>?}
 ///
-/// `<reading>` is the whole reading, as [encodeReading] writes it, so whatever hands
+/// `<translated event>` is the whole of it, as [encodeTranslatedEvent] writes
+/// it, so whatever hands
 /// the event to its trajectory's crux reads the node from the decision, and
 /// never reads a module's bytes. The placement is `"trajectory": <id>` for
 /// [OnTrajectory]; `"startsTrajectory": true` and the mission for
@@ -161,14 +162,14 @@ sealed class DecidedAtEvent implements AdmissionDecision {
 /// entry that started it, and the airlock enforces them; the docking station
 /// passes them through unread.
 ///
-/// [startsTurn] is there exactly when the reading is [MessageSaid]: whether the
+/// [startsTurn] is there exactly when the event is [MessageSaid]: whether the
 /// agent answers it, as the docking station's turn rule said. Something said
 /// that starts no turn is still admitted under its address's trajectory, so the
 /// agent has it as context. It never starts a trajectory, since a trajectory
 /// brings up an agent loop: one that starts no turn where its address has no
 /// trajectory yet is [SaidStartsNoTurn].
 ///
-/// The reading's [containingAddress] is kept so which mission an address in an
+/// The event's [containingAddress] is kept so which mission an address in an
 /// external system is can be rebuilt from decisions alone; its [from], for
 /// rules about who starts turns, such as a cap on turns bots start.
 final class EventAdmittedToMission extends AdmissionDecision
@@ -181,7 +182,7 @@ final class EventAdmittedToMission extends AdmissionDecision
   EventAdmittedToMission(
     this.event, {
     required super.by,
-    required this.reading,
+    required this.translatedEvent,
     required this.placement,
     this.rules,
     this.startsTurn,
@@ -193,11 +194,11 @@ final class EventAdmittedToMission extends AdmissionDecision
         'given exactly when the admission starts a mission or a trajectory',
       );
     }
-    if ((startsTurn != null) != (reading is MessageSaid)) {
+    if ((startsTurn != null) != (translatedEvent is MessageSaid)) {
       throw ArgumentError.value(
         startsTurn,
         'startsTurn',
-        'given exactly when the reading is something said',
+        'given exactly when the event is something said',
       );
     }
     if (placement is StartsTrajectory && startsTurn == false) {
@@ -211,7 +212,7 @@ final class EventAdmittedToMission extends AdmissionDecision
 
   @override
   final ObjectId event;
-  final AdmissibleEvent reading;
+  final AdmissibleEvent translatedEvent;
   final AdmittedPlacement placement;
   final JsonObject? rules;
 
@@ -226,13 +227,14 @@ final class EventAdmittedToMission extends AdmissionDecision
   };
 
   AddressInExternalSystem get addressInExternalSystem =>
-      reading.addressInExternalSystem;
-  AddressInExternalSystem? get containingAddress => reading.containingAddress;
-  EventKey get key => reading.key;
-  ActorId? get from => reading.from;
+      translatedEvent.addressInExternalSystem;
+  AddressInExternalSystem? get containingAddress =>
+      translatedEvent.containingAddress;
+  EventKey get key => translatedEvent.key;
+  ActorId? get from => translatedEvent.from;
 
   /// The message it says, changes or judges; null for a join.
-  SourceMessageId? get message => switch (reading) {
+  SourceMessageId? get message => switch (translatedEvent) {
     MessageSaid(:final message) || MessageChanged(:final message) => message,
     ShownMessageJudged(:final to) => to,
     ActorsJoinedAddress() => null,
@@ -277,26 +279,27 @@ sealed class TrajectoryClosed extends AdmissionDecision {
   final MissionId mission;
 }
 
-/// Closed at [event], because a person at its address asked ([reading]).
+/// Closed at [event], because a person at its address asked
+/// ([translatedEvent]).
 ///
 /// Anyone at the address may close it, so it is decided [DecidedBy.rules],
-/// and [reading] says who asked.
+/// and [translatedEvent] says who asked.
 ///
-///     {"event": <hex>, "by": <who>, "reading": <reading>,
+///     {"event": <hex>, "by": <who>, "translatedEvent": <translated event>,
 ///      "trajectory": <id>, "mission": <id>}
 final class TrajectoryClosedBecausePersonAsked extends TrajectoryClosed
     implements DecidedAtEvent {
   const TrajectoryClosedBecausePersonAsked(
     this.event, {
     required super.by,
-    required this.reading,
+    required this.translatedEvent,
     required super.trajectory,
     required super.mission,
   });
 
   @override
   final ObjectId event;
-  final PersonAskedToCloseTrajectory reading;
+  final PersonAskedToCloseTrajectory translatedEvent;
 }
 
 /// Closed by [operator], a person running the docking station's close
@@ -358,7 +361,7 @@ final class OperatorName {
 ///
 ///     {"event": <hex>, "by": <who>, "why": <case>, ...the case's own fields}
 ///
-/// `<case>` is `no-reading-for-source`, `reading-found-nothing`,
+/// `<case>` is `no-translator-for-source`, `translator-found-nothing`,
 /// `duplicate-event`, `address-not-admitted-to-mission`,
 /// `said-starts-no-turn`, `judged-message-has-no-trajectory`,
 /// `close-asked-at-address-with-no-trajectory` or
@@ -371,19 +374,19 @@ sealed class EventNotAdmittedToMission extends AdmissionDecision
   final ObjectId event;
 }
 
-/// No reading takes the event's source, or its body is not what a relay
-/// records. A source whose module has no reading yet has its events
-/// not admitted, so a reading added later starts from the events after it.
-final class NoReadingForSource extends EventNotAdmittedToMission {
-  const NoReadingForSource(super.event, {required super.by});
+/// No translator takes the event's source, or its body is not what a relay
+/// records. A source whose module has no translator yet has its events
+/// not admitted, so a translator added later starts from the events after it.
+final class NoTranslatorForSource extends EventNotAdmittedToMission {
+  const NoTranslatorForSource(super.event, {required super.by});
 }
 
-/// The module's reading found nothing to admit.
-final class ReadingFoundNothing extends EventNotAdmittedToMission {
-  const ReadingFoundNothing(super.event, {required super.by});
+/// The module's translator found nothing to admit.
+final class TranslatorFoundNothing extends EventNotAdmittedToMission {
+  const TranslatorFoundNothing(super.event, {required super.by});
 }
 
-/// An event a reading named by its key, not admitted. A key is decided once,
+/// An event a translator named by its key, not admitted. A key is decided once,
 /// whichever way it went, so a second event with the same key is a
 /// [DuplicateEvent], even when the first was not admitted.
 sealed class NotAdmittedKeyedEvent extends EventNotAdmittedToMission {
