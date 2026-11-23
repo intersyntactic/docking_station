@@ -20,6 +20,17 @@ a reader on 0.4.0 refuses 0.3.0's entries, and a reader on 0.3.0 refuses
     `ReadingFoundNothing` is `TranslatorFoundNothing`.
   - `EventAdmittedToMission.reading` and
     `TrajectoryClosedBecausePersonAsked.reading` are `.translatedEvent`.
+- Every translated event names where replies to it go:
+  `AddressedEvent.replyEndpoint`, an `AddressPrefix` from
+  is_web_address_vocabulary ^0.1.1, null when the module can't name one. It
+  travels inside `translatedEvent` as `replyEndpoint`, written by
+  `encodeAddressPrefix`. An admission that starts a mission or a trajectory
+  copies it to the entry's top level beside `rules`
+  (`EventAdmittedToMission.replyEndpoint`), and path_start reads it there
+  (`EntryStartsTrajectory.replyEndpoint`), so the airlock has it without
+  decoding the translated event. A copy that differs from the translated
+  event's, or one on an entry that starts nothing, makes the entry
+  unreadable.
 - In the entries: the `reading` field of `event-admitted-to-mission` and
   `trajectory-closed` is `translatedEvent`, and the `why`s
   `no-reading-for-source` and `reading-found-nothing` are

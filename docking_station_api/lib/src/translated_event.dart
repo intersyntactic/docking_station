@@ -18,6 +18,8 @@ import 'package:is_conversation_shapes/is_conversation_shapes.dart'
     show SourceMessageId, UserSaid, WhatChanged;
 import 'package:is_content_id/is_content_id.dart' show ObjectId;
 import 'package:is_shapes/is_shapes.dart' show ActorId;
+import 'package:is_web_address_vocabulary/is_web_address_vocabulary.dart'
+    show AddressPrefix;
 
 /// One event, as the docking station gives it to a translator: its entry's
 /// hash, and what its relay recorded, `{"at", "source", "bytes"}`, as an entry
@@ -124,6 +126,7 @@ sealed class AddressedEvent extends TranslatedEvent {
     required this.addressInExternalSystem,
     required this.containingAddress,
     required this.addressedTo,
+    required this.replyEndpoint,
     required this.key,
   });
 
@@ -145,6 +148,12 @@ sealed class AddressedEvent extends TranslatedEvent {
   /// sign-in the bot is: those belong to whoever keeps the pools.
   final ActorId? addressedTo;
 
+  /// Where replies to it go, such as a Teams conversation's activities on the
+  /// Bot Connector that sent it, or null when the module can't name one. The
+  /// module vouches for it, as the external system verified the event; the
+  /// airlock grants a trajectory's replies to the one its start entry names.
+  final AddressPrefix? replyEndpoint;
+
   /// Who it comes from, or null for no one the module can name.
   ActorId? get from;
 
@@ -161,6 +170,7 @@ sealed class AdmissibleEvent extends AddressedEvent {
     required super.addressInExternalSystem,
     required super.containingAddress,
     required super.addressedTo,
+    required super.replyEndpoint,
     required super.key,
   });
 }
@@ -178,6 +188,7 @@ final class MessageSaid extends AdmissibleEvent {
     required super.addressInExternalSystem,
     required super.containingAddress,
     required super.addressedTo,
+    required super.replyEndpoint,
     required super.key,
     required this.node,
   });
@@ -203,6 +214,7 @@ final class MessageChanged extends AdmissibleEvent {
     required super.addressInExternalSystem,
     required super.containingAddress,
     required super.addressedTo,
+    required super.replyEndpoint,
     required this.from,
     required super.key,
     required this.message,
@@ -226,6 +238,7 @@ final class ActorsJoinedAddress extends AdmissibleEvent {
     required super.addressInExternalSystem,
     required super.containingAddress,
     required super.addressedTo,
+    required super.replyEndpoint,
     required this.from,
     required super.key,
     required this.joiners,
@@ -243,6 +256,7 @@ final class ActorsJoinedAddress extends AdmissibleEvent {
     required AddressInExternalSystem addressInExternalSystem,
     required AddressInExternalSystem? containingAddress,
     required ActorId? addressedTo,
+    required AddressPrefix? replyEndpoint,
     required ActorId? from,
     required EventKey key,
     required Iterable<ActorId> joiners,
@@ -253,6 +267,7 @@ final class ActorsJoinedAddress extends AdmissibleEvent {
       addressInExternalSystem: addressInExternalSystem,
       containingAddress: containingAddress,
       addressedTo: addressedTo,
+      replyEndpoint: replyEndpoint,
       from: from,
       key: key,
       joiners: list,
@@ -273,6 +288,7 @@ final class ShownMessageJudged extends AdmissibleEvent {
     required super.addressInExternalSystem,
     required super.containingAddress,
     required super.addressedTo,
+    required super.replyEndpoint,
     required this.from,
     required super.key,
     required this.to,
@@ -302,6 +318,7 @@ final class PersonAskedToCloseTrajectory extends AddressedEvent {
     required super.addressInExternalSystem,
     required super.containingAddress,
     required super.addressedTo,
+    required super.replyEndpoint,
     required this.from,
     required super.key,
     required this.message,

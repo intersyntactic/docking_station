@@ -75,6 +75,8 @@ void main() {
             StartsMission() => MissionId.of(entry),
           });
           expect(starts.rules.asUncheckedMap(), full.rules!.asUncheckedMap());
+          expect(starts.replyEndpoint, full.replyEndpoint);
+          expect(starts.replyEndpoint, isNotNull);
         case _:
           expect(
             narrow,

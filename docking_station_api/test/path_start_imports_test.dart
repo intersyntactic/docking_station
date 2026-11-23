@@ -8,9 +8,14 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-/// The packages path_start.dart may reach: this one, the two it names,
+/// The packages path_start.dart may reach: this one, the three it names,
 /// and what they import.
-const _allowed = {'is_docking_station_api', 'is_shapes', 'is_content_id'};
+const _allowed = {
+  'is_docking_station_api',
+  'is_shapes',
+  'is_content_id',
+  'is_web_address_vocabulary',
+};
 
 final _directive = RegExp(
   r'''^\s*(?:import|export|part)\s+['"]([^'"]+)['"]''',

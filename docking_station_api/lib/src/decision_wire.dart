@@ -11,6 +11,8 @@ import 'package:is_conversation_shapes/is_conversation_shapes.dart'
 import 'package:is_logbook_format/is_logbook_format.dart' show Kind, ObjectId;
 import 'package:is_shapes/is_shapes.dart'
     show DecidedBy, MissionId, TrajectoryId;
+import 'package:is_web_address_vocabulary/is_web_address_vocabulary.dart'
+    show AddressPrefix, decodeAddressPrefix, encodeAddressPrefix;
 
 import 'decision.dart';
 import 'translated_event.dart';
@@ -35,6 +37,9 @@ import 'translated_event_wire.dart';
           _mission(json, mission);
       }
       if (decision.rules case final rules?) json['rules'] = rules;
+      if (decision.replyEndpoint case final endpoint?) {
+        json['replyEndpoint'] = encodeAddressPrefix(endpoint);
+      }
       if (decision.startsTurn case final startsTurn?) {
         json['startsTurn'] = startsTurn;
       }
@@ -246,6 +251,18 @@ EventAdmittedToMission? _admitted(
     if (rules == null) return null;
     fields.add('rules');
   }
+  AddressPrefix? replyEndpoint;
+  if (json.containsKey('replyEndpoint')) {
+    try {
+      replyEndpoint = decodeAddressPrefix(
+        json['replyEndpoint'],
+        'replyEndpoint',
+      );
+    } on FormatException {
+      return null;
+    }
+    fields.add('replyEndpoint');
+  }
   bool? startsTurn;
   if (json.containsKey('startsTurn')) {
     if (json['startsTurn'] case final bool value) {
@@ -259,7 +276,7 @@ EventAdmittedToMission? _admitted(
   if ((rules != null) != EventAdmittedToMission.starts(placement)) return null;
   if ((startsTurn != null) != (translatedEvent is MessageSaid)) return null;
   if (placement is StartsTrajectory && startsTurn == false) return null;
-  return EventAdmittedToMission(
+  final decision = EventAdmittedToMission(
     event,
     by: by,
     translatedEvent: translatedEvent,
@@ -267,6 +284,10 @@ EventAdmittedToMission? _admitted(
     rules: rules,
     startsTurn: startsTurn,
   );
+  // The copy is exactly the translated event's endpoint on an entry that
+  // starts something, and absent otherwise.
+  if (replyEndpoint != decision.replyEndpoint) return null;
+  return decision;
 }
 
 MissionPlacement? _readMission(Map<String, Object?> json, Set<String> fields) {

@@ -18,6 +18,8 @@ dependencies:
   is_conversation_shapes: ^0.8.3
   is_logbook_format: ^0.1.0
   is_shapes: ^0.6.0
+  # 0.1.1 reads an address prefix strictly, as every field here is read.
+  is_web_address_vocabulary: ^0.1.1
 
 dev_dependencies:
   lints: ^6.1.0

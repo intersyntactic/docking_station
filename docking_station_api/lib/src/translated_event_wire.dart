@@ -13,6 +13,8 @@ import 'package:is_annotation_shapes/is_annotation_shapes.dart'
 import 'package:is_conversation_shapes/is_conversation_shapes.dart'
     show SourceMessageId, UserSaid, WhatChanged;
 import 'package:is_shapes/is_shapes.dart' show ActorId;
+import 'package:is_web_address_vocabulary/is_web_address_vocabulary.dart'
+    show decodeAddressPrefix, encodeAddressPrefix;
 
 import 'translated_event.dart';
 
@@ -29,8 +31,12 @@ const translatedEventNodeShapes = <String, Set<String>>{
 /// [event] as JSON:
 ///
 ///     {"case": <case>, "addressInExternalSystem": <id>,
-///      "containingAddress": <id>?, "addressedTo": <actor>?, "key": <key>,
+///      "containingAddress": <id>?, "addressedTo": <actor>?,
+///      "replyEndpoint": <address prefix>?, "key": <key>,
 ///      ...the case's own fields}
+///
+/// `<address prefix>` is `{"origin", "pathPrefix"}`, as is_web_address_vocabulary's
+/// `encodeAddressPrefix` writes it.
 ///
 /// `<case>` and its fields are `message-said`, with `"node"`, a
 /// [UserSaid]; `message-changed`, with `"from"?`, `"message"` and
@@ -43,6 +49,8 @@ JsonObject encodeTranslatedEvent(AddressedEvent event) => JsonObject.of({
   'addressInExternalSystem': event.addressInExternalSystem.value,
   'containingAddress': ?event.containingAddress?.value,
   'addressedTo': ?event.addressedTo?.value,
+  if (event.replyEndpoint case final endpoint?)
+    'replyEndpoint': encodeAddressPrefix(endpoint),
   'key': event.key.value,
   ...switch (event) {
     MessageSaid(:final node) => {'node': node.toJson()},
@@ -90,6 +98,9 @@ AddressedEvent decodeTranslatedEvent(JsonObject json) {
   final addressedTo = json.has('addressedTo')
       ? _parse(json, 'addressedTo', ActorId.parse)
       : null;
+  final replyEndpoint = json.has('replyEndpoint')
+      ? decodeAddressPrefix(json.raw('replyEndpoint'), 'replyEndpoint')
+      : null;
   final key = _parse(json, 'key', EventKey.parse);
   ActorId? from() =>
       json.has('from') ? _parse(json, 'from', ActorId.parse) : null;
@@ -100,6 +111,7 @@ AddressedEvent decodeTranslatedEvent(JsonObject json) {
         addressInExternalSystem: addressInExternalSystem,
         containingAddress: containingAddress,
         addressedTo: addressedTo,
+        replyEndpoint: replyEndpoint,
         key: key,
         node: UserSaid.fromJson(json.object('node')),
       ),
@@ -110,6 +122,7 @@ AddressedEvent decodeTranslatedEvent(JsonObject json) {
         addressInExternalSystem: addressInExternalSystem,
         containingAddress: containingAddress,
         addressedTo: addressedTo,
+        replyEndpoint: replyEndpoint,
         from: from(),
         key: key,
         message: _parse(json, 'message', SourceMessageId.parse),
@@ -122,6 +135,7 @@ AddressedEvent decodeTranslatedEvent(JsonObject json) {
             addressInExternalSystem: addressInExternalSystem,
             containingAddress: containingAddress,
             addressedTo: addressedTo,
+            replyEndpoint: replyEndpoint,
             from: from(),
             key: key,
             joiners: [
@@ -138,6 +152,7 @@ AddressedEvent decodeTranslatedEvent(JsonObject json) {
         addressInExternalSystem: addressInExternalSystem,
         containingAddress: containingAddress,
         addressedTo: addressedTo,
+        replyEndpoint: replyEndpoint,
         from: _parse(json, 'from', ActorId.parse),
         key: key,
         to: _parse(json, 'to', SourceMessageId.parse),
@@ -150,6 +165,7 @@ AddressedEvent decodeTranslatedEvent(JsonObject json) {
         addressInExternalSystem: addressInExternalSystem,
         containingAddress: containingAddress,
         addressedTo: addressedTo,
+        replyEndpoint: replyEndpoint,
         from: _parse(json, 'from', ActorId.parse),
         key: key,
         message: _parse(json, 'message', SourceMessageId.parse),
@@ -166,6 +182,7 @@ AddressedEvent decodeTranslatedEvent(JsonObject json) {
       'addressInExternalSystem',
       'containingAddress',
       'addressedTo',
+      'replyEndpoint',
       'key',
       ...fields,
     }.contains(field)) {

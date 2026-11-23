@@ -31,6 +31,8 @@ import 'package:is_conversation_shapes/is_conversation_shapes.dart'
 import 'package:is_logbook_format/is_logbook_format.dart' show Kind, ObjectId;
 import 'package:is_shapes/is_shapes.dart'
     show ActorId, DecidedBy, MissionId, TrajectoryId;
+import 'package:is_web_address_vocabulary/is_web_address_vocabulary.dart'
+    show AddressPrefix;
 
 import 'translated_event.dart';
 
@@ -144,7 +146,8 @@ sealed class DecidedAtEvent implements AdmissionDecision {
 /// The entry, of kind `event-admitted-to-mission`:
 ///
 ///     {"event": <hex>, "by": <who>, "translatedEvent": <translated event>,
-///      ...the placement, "rules": <rules>?, "startsTurn": <bool>?}
+///      ...the placement, "rules": <rules>?,
+///      "replyEndpoint": <address prefix>?, "startsTurn": <bool>?}
 ///
 /// `<translated event>` is the whole of it, as [encodeTranslatedEvent] writes
 /// it, so whatever hands
@@ -225,6 +228,14 @@ final class EventAdmittedToMission extends AdmissionDecision
     StartsTrajectory() || IntoMission(mission: StartsMission()) => true,
     OnTrajectory() || IntoMission(mission: InMission()) => false,
   };
+
+  /// Where replies go, on an admission that starts a mission or a
+  /// trajectory: [translatedEvent]'s endpoint, copied to the entry's top
+  /// level beside [rules] so a reader of a trajectory's start, such as the
+  /// airlock, has it without decoding the translated event. Null on any
+  /// other admission, and when the module named none.
+  AddressPrefix? get replyEndpoint =>
+      starts(placement) ? translatedEvent.replyEndpoint : null;
 
   AddressInExternalSystem get addressInExternalSystem =>
       translatedEvent.addressInExternalSystem;

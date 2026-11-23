@@ -16,6 +16,8 @@ import 'dart:typed_data';
 import 'package:is_content_id/is_content_id.dart' show ObjectId;
 import 'package:is_shapes/is_shapes.dart'
     show DecidedBy, MissionId, TrajectoryId;
+import 'package:is_web_address_vocabulary/is_web_address_vocabulary.dart'
+    show AddressPrefix, decodeAddressPrefix;
 
 /// What an `event-admitted-to-mission` entry says about the trajectories it
 /// starts: [EntryStartsTrajectory], [EntryStartsNoTrajectory], or
@@ -25,7 +27,8 @@ sealed class AdmittedTrajectoryEntry<R> {
   const AdmittedTrajectoryEntry();
 }
 
-/// The entry starts [trajectory], in [mission], under [rules].
+/// The entry starts [trajectory], in [mission], under [rules], with its
+/// replies going to [replyEndpoint].
 final class EntryStartsTrajectory<R> extends AdmittedTrajectoryEntry<R> {
   const EntryStartsTrajectory({
     required this.event,
@@ -33,6 +36,7 @@ final class EntryStartsTrajectory<R> extends AdmittedTrajectoryEntry<R> {
     required this.trajectory,
     required this.mission,
     required this.rules,
+    required this.replyEndpoint,
   });
 
   /// The event admitted, by its entry's hash.
@@ -41,6 +45,10 @@ final class EntryStartsTrajectory<R> extends AdmittedTrajectoryEntry<R> {
   final TrajectoryId trajectory;
   final MissionId mission;
   final R rules;
+
+  /// Where replies to the event that started it go; null when its module
+  /// named none.
+  final AddressPrefix? replyEndpoint;
 }
 
 /// The entry is read, and starts no trajectory: it goes under one
@@ -164,6 +172,24 @@ AdmittedTrajectoryEntry<R> readTrajectoryStart<R>(
     return unreadable('`rules` not given exactly when something starts');
   }
 
+  // Where replies go: only beside rules, and read without decoding the
+  // translated event it is copied from.
+  AddressPrefix? replyEndpoint;
+  if (json.containsKey('replyEndpoint')) {
+    if (read == null) {
+      return unreadable('`replyEndpoint` on an entry that starts nothing');
+    }
+    try {
+      replyEndpoint = decodeAddressPrefix(
+        json['replyEndpoint'],
+        'replyEndpoint',
+      );
+    } on FormatException catch (e) {
+      return unreadable(e.message);
+    }
+    fields.add('replyEndpoint');
+  }
+
   // Whether it starts a turn, exactly for something said, and never
   // false on a trajectory's start.
   final said = eventCase == 'message-said';
@@ -192,5 +218,6 @@ AdmittedTrajectoryEntry<R> readTrajectoryStart<R>(
     trajectory: TrajectoryId.of(entry),
     mission: inMission ?? MissionId.of(entry),
     rules: read as R,
+    replyEndpoint: replyEndpoint,
   );
 }
