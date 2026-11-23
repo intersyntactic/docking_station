@@ -17,16 +17,59 @@ import 'package:is_annotation_shapes/is_annotation_shapes.dart'
 import 'package:is_conversation_shapes/is_conversation_shapes.dart'
     show SourceMessageId, UserSaid, WhatChanged;
 import 'package:is_content_id/is_content_id.dart' show ObjectId;
+import 'package:is_logbook_format/is_logbook_format.dart' show Kind;
 import 'package:is_shapes/is_shapes.dart' show ActorId;
 import 'package:is_web_address_vocabulary/is_web_address_vocabulary.dart'
     show AddressPrefix;
 
-/// One event, as the docking station gives it to a translator: its entry's
-/// hash, and what its relay recorded, `{"at", "source", "bytes"}`, as an entry
-/// of kind `event`, or `arrived` if it was recorded before that kind was
-/// named.
+/// Where relayed events come from, such as `teams`: a lowercase letter, then
+/// lowercase letters, digits and `-`, as an address in an external system
+/// starts.
 ///
-/// Only [RelayedEvent.read] makes one, from the entry's body as recorded.
+/// Its relay records each event as an entry of [kind], `<source>-event`. The
+/// logbook's sender table lets one user write each kind, so an event's
+/// source is vouched for by who may write its kind, never by its body.
+final class RelayedEventSource {
+  const RelayedEventSource._(this.value);
+
+  /// The source, as text.
+  final String value;
+
+  /// [s] as a source; null unless it is one.
+  static RelayedEventSource? parse(String s) =>
+      _name.hasMatch(s) ? RelayedEventSource._(s) : null;
+
+  /// The source whose relay records entries of [kind]; null when [kind] is
+  /// not a relayed event's.
+  static RelayedEventSource? ofKind(Kind kind) {
+    final name = kind.name;
+    if (!name.endsWith(_suffix)) return null;
+    return parse(name.substring(0, name.length - _suffix.length));
+  }
+
+  /// The kind its relay records each event as.
+  Kind get kind => Kind.parse('$value$_suffix')!;
+
+  static final _name = RegExp(r'^[a-z][a-z0-9-]*$');
+  static const _suffix = '-event';
+
+  @override
+  bool operator ==(Object other) =>
+      other is RelayedEventSource && other.value == value;
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toString() => value;
+}
+
+/// One event, as the docking station gives it to a translator: its entry's
+/// hash, its source, read from the entry's kind, and what its relay
+/// recorded, `{"at", "bytes"}`.
+///
+/// Only [RelayedEvent.read] makes one, from the entry's kind and body as
+/// recorded. A relay writes one with [encodeRelayedEvent].
 final class RelayedEvent {
   const RelayedEvent._({
     required this.entry,
@@ -42,28 +85,27 @@ final class RelayedEvent {
   /// When the relay took it in.
   final DateTime at;
 
-  /// The relay's name for where it came from, such as `teams`.
-  final String source;
+  /// Where it came from, as its entry's kind says.
+  final RelayedEventSource source;
 
   /// The bytes exactly as they came.
   final Uint8List bytes;
 
-  /// The event recorded at [entry], from its [body] as the relay recorded it.
-  /// Null for anything else: it is our own wire, read strictly.
-  static RelayedEvent? read(ObjectId entry, Uint8List body) {
+  /// The event recorded at [entry], from its [kind] and [body] as the relay
+  /// recorded them. Null for anything else: a kind that is no relayed
+  /// event's, or a body that isn't exactly `{"at", "bytes"}`. It is our own
+  /// wire, read strictly.
+  static RelayedEvent? read(ObjectId entry, Kind kind, Uint8List body) {
+    final source = RelayedEventSource.ofKind(kind);
+    if (source == null) return null;
     final Object? json;
     try {
       json = jsonDecode(utf8.decode(body));
     } on FormatException {
       return null;
     }
-    if (json
-        case {
-          'at': final String at,
-          'source': final String source,
-          'bytes': final String bytes,
-        }
-        when json.length == 3) {
+    if (json case {'at': final String at, 'bytes': final String bytes}
+        when json.length == 2) {
       final when = DateTime.tryParse(at);
       final Uint8List raw;
       try {
@@ -71,12 +113,29 @@ final class RelayedEvent {
       } on FormatException {
         return null;
       }
-      if (when == null || source.isEmpty) return null;
+      if (when == null) return null;
       return RelayedEvent._(entry: entry, at: when, source: source, bytes: raw);
     }
     return null;
   }
 }
+
+/// The entry a relay records for [bytes] from [source], taken in [at]: its
+/// kind, `<source>-event`, and its body, `{"at", "bytes"}`, as
+/// [RelayedEvent.read] reads them back.
+(Kind, Uint8List) encodeRelayedEvent(
+  RelayedEventSource source, {
+  required DateTime at,
+  required Uint8List bytes,
+}) => (
+  source.kind,
+  utf8.encode(
+    jsonEncode({
+      'at': at.toUtc().toIso8601String(),
+      'bytes': base64Encode(bytes),
+    }),
+  ),
+);
 
 /// A module's translator of its relay's events into the docking station's
 /// terms: one [TranslatedEvent] per event, carrying state from one event to
@@ -93,7 +152,7 @@ final class RelayedEvent {
 /// the state it is given.
 abstract interface class TranslatesRelayedEvents<S> {
   /// The [RelayedEvent.source] whose events this translates.
-  String get source;
+  RelayedEventSource get source;
 
   /// The state before any event.
   S get start;

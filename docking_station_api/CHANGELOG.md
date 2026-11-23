@@ -20,6 +20,15 @@ a reader on 0.4.0 refuses 0.3.0's entries, and a reader on 0.3.0 refuses
     `ReadingFoundNothing` is `TranslatorFoundNothing`.
   - `EventAdmittedToMission.reading` and
     `TrajectoryClosedBecausePersonAsked.reading` are `.translatedEvent`.
+- A relayed event's source is its entry's kind, never its body, so the
+  logbook's sender table vouches for it: each relay records its events as
+  `<source>-event` (`teams-event`), and only that relay's user may write
+  the kind. `RelayedEventSource` is the source, with its `kind` and
+  `ofKind`. `RelayedEvent.read` takes the entry's kind, and the body is
+  `{"at", "bytes"}` alone; a body that names a source is refused.
+  `encodeRelayedEvent` writes one, for a relay. The kinds `event` and
+  `arrived` are gone. `TranslatesRelayedEvents.source` is a
+  `RelayedEventSource`.
 - Every translated event names where replies to it go:
   `AddressedEvent.replyEndpoint`, an `AddressPrefix` from
   is_web_address_vocabulary ^0.1.1, null when the module can't name one. It
