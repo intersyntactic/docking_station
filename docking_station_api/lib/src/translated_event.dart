@@ -88,7 +88,9 @@ final class RelayedEvent {
   /// Where it came from, as its entry's kind says.
   final RelayedEventSource source;
 
-  /// The bytes exactly as they came.
+  /// What the source's relay recorded of the event: the bytes as they came,
+  /// or the fields its translator reads, where the rest can carry
+  /// credentials. Only that source's translator knows which, and reads them.
   final Uint8List bytes;
 
   /// The event recorded at [entry], from its [kind] and [body] as the relay
