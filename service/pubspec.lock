@@ -245,11 +245,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v0.0.7"
-      resolved-ref: "621efed1727756b83f8dc395af26dd220ec1794f"
+      ref: "v0.0.8"
+      resolved-ref: "38c9687118d2673b2da5afee67f9b376fdac9e13"
       url: "https://github.com/intersyntactic/teams_module.git"
     source: git
-    version: "0.0.7"
+    version: "0.0.8"
   is_tools_api:
     dependency: transitive
     description:

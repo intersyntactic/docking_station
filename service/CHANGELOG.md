@@ -1,6 +1,11 @@
 Each version is tagged `service-vX.Y.Z` on the commit it is built from, and a
 deploy names the tag.
 
+## 0.5.1
+
+- On teams_module v0.0.8, the commit the flight_rules 0.6.0 window deploys,
+  so every build in it locks one teams_module.
+
 ## 0.5.0
 
 On is_flight_rules ^0.6.0, and is_effects 0.14.3 through it. The rules
