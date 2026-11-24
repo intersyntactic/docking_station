@@ -41,8 +41,7 @@ final class RepliesUnderWebAddress extends ReplyEndpoint {
   String toString() => 'RepliesUnderWebAddress($prefix)';
 }
 
-/// Replies go to Slack's [channel], in [thread] when the conversation is a
-/// thread, through [origin]. Slack takes every reply at one web address and
+/// Replies go to Slack's [channel], in [thread], through [origin]. Slack takes every reply at one web address and
 /// names its conversation in the request's body, so a reply is confined to
 /// its conversation by [channel] and [thread], never by where it is sent;
 /// [origin] is what the trajectory's rules say it may reply through at all.
@@ -58,8 +57,10 @@ final class RepliesInSlackConversation extends ReplyEndpoint {
 
   final SlackChannelId channel;
 
-  /// The thread's parent message, or null for a direct message or a
-  /// channel's own top level.
+  /// The thread the reply goes in, by its root message. A post at a
+  /// channel's or a group message's top level is a thread's root, so a
+  /// reply to it names that post's own timestamp. Null only for a direct
+  /// message between one person and the bot, which Slack doesn't thread.
   final SlackThreadTimestamp? thread;
 
   @override
