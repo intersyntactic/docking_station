@@ -21,13 +21,14 @@ Map<String, Object?> _whatMayLeave(List<String> signIns) => {
   'programsNetwork': 'noNetworkOfTheirOwn',
 };
 
-/// Flight rules starting on [model] as [signIn], allowing only it, and
-/// running no programs.
+/// Flight rules starting on [model] as [signIn], allowing only it, running
+/// no programs and giving no tools.
 Map<String, Object?> _flightRules(String signIn, String model) => {
   'whatMayLeaveThisMachine': _whatMayLeave([signIn]),
   'startingModel': {'signIn': signIn, 'model': model},
   'programsItMayRun': <Object?>[],
   'programsItNeeds': <Object?>[],
+  'givenTools': <Object?>[],
 };
 
 final _claude = _flightRules('claude-team', 'claude-opus-5-5');
