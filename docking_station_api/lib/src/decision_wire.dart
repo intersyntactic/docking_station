@@ -11,10 +11,9 @@ import 'package:is_conversation_shapes/is_conversation_shapes.dart'
 import 'package:is_logbook_format/is_logbook_format.dart' show Kind, ObjectId;
 import 'package:is_shapes/is_shapes.dart'
     show DecidedBy, MissionId, TrajectoryId;
-import 'package:is_web_address_vocabulary/is_web_address_vocabulary.dart'
-    show AddressPrefix, decodeAddressPrefix, encodeAddressPrefix;
 
 import 'decision.dart';
+import 'reply_endpoint.dart';
 import 'translated_event.dart';
 import 'translated_event_wire.dart';
 
@@ -38,7 +37,7 @@ import 'translated_event_wire.dart';
       }
       if (decision.rules case final rules?) json['rules'] = rules;
       if (decision.replyEndpoint case final endpoint?) {
-        json['replyEndpoint'] = encodeAddressPrefix(endpoint);
+        json['replyEndpoint'] = encodeReplyEndpoint(endpoint);
       }
       if (decision.startsTurn case final startsTurn?) {
         json['startsTurn'] = startsTurn;
@@ -251,10 +250,10 @@ EventAdmittedToMission? _admitted(
     if (rules == null) return null;
     fields.add('rules');
   }
-  AddressPrefix? replyEndpoint;
+  ReplyEndpoint? replyEndpoint;
   if (json.containsKey('replyEndpoint')) {
     try {
-      replyEndpoint = decodeAddressPrefix(
+      replyEndpoint = decodeReplyEndpoint(
         json['replyEndpoint'],
         'replyEndpoint',
       );

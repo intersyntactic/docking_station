@@ -16,8 +16,8 @@ import 'dart:typed_data';
 import 'package:is_content_id/is_content_id.dart' show ObjectId;
 import 'package:is_shapes/is_shapes.dart'
     show DecidedBy, MissionId, TrajectoryId;
-import 'package:is_web_address_vocabulary/is_web_address_vocabulary.dart'
-    show AddressPrefix, decodeAddressPrefix;
+
+import 'reply_endpoint.dart';
 
 /// What an `event-admitted-to-mission` entry says about the trajectories it
 /// starts: [EntryStartsTrajectory], [EntryStartsNoTrajectory], or
@@ -48,7 +48,7 @@ final class EntryStartsTrajectory<R> extends AdmittedTrajectoryEntry<R> {
 
   /// Where replies to the event that started it go; null when its module
   /// named none.
-  final AddressPrefix? replyEndpoint;
+  final ReplyEndpoint? replyEndpoint;
 }
 
 /// The entry is read, and starts no trajectory: it goes under one
@@ -174,13 +174,13 @@ AdmittedTrajectoryEntry<R> readTrajectoryStart<R>(
 
   // Where replies go: only beside rules, and read without decoding the
   // translated event it is copied from.
-  AddressPrefix? replyEndpoint;
+  ReplyEndpoint? replyEndpoint;
   if (json.containsKey('replyEndpoint')) {
     if (read == null) {
       return unreadable('`replyEndpoint` on an entry that starts nothing');
     }
     try {
-      replyEndpoint = decodeAddressPrefix(
+      replyEndpoint = decodeReplyEndpoint(
         json['replyEndpoint'],
         'replyEndpoint',
       );

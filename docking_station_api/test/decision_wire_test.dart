@@ -14,7 +14,7 @@ import 'package:is_logbook_format/is_logbook_format.dart' show Kind, ObjectId;
 import 'package:is_shapes/is_shapes.dart'
     show ActorId, DecidedBy, MissionId, TrajectoryId;
 import 'package:is_web_address_vocabulary/is_web_address_vocabulary.dart'
-    show AddressPrefix, Origin, PathPrefix, encodeAddressPrefix;
+    show AddressPrefix, Origin, PathPrefix;
 import 'package:test/test.dart';
 
 final _a = 'a' * 64, _b = 'b' * 64, _c = 'c' * 64;
@@ -27,9 +27,11 @@ final key = EventKey.parse('message:1')!;
 final from = ActorId.parse('teams:t/p')!;
 final bot = ActorId.parse('teams:t/bot:app')!;
 final message = SourceMessageId.parse('19:x;messageid=1|1')!;
-final replyEndpoint = AddressPrefix.of(
-  Origin.parse('https://smba.trafficmanager.net')!,
-  PathPrefix.parse('/amer/v3/conversations/19:x/activities/')!,
+final replyEndpoint = RepliesUnderWebAddress(
+  AddressPrefix.of(
+    Origin.parse('https://smba.trafficmanager.net')!,
+    PathPrefix.parse('/amer/v3/conversations/19:x/activities/')!,
+  ),
 );
 
 final said = MessageSaid(
@@ -111,8 +113,9 @@ EventAdmittedToMission _admitted(AdmittedPlacement placement, DecidedBy by) =>
 String _text((Kind, Uint8List) entry) => utf8.decode(entry.$2);
 
 const _replyEndpointField =
-    '"replyEndpoint":{"origin":"https://smba.trafficmanager.net",'
-    '"pathPrefix":"/amer/v3/conversations/19:x/activities/"}';
+    '"replyEndpoint":{"case":"under-web-address","addressPrefix":'
+    '{"origin":"https://smba.trafficmanager.net",'
+    '"pathPrefix":"/amer/v3/conversations/19:x/activities/"}}';
 
 void main() {
   test('an admission that starts a mission and its first trajectory', () {
@@ -155,26 +158,36 @@ void main() {
     expect(json(onTrajectory).containsKey('replyEndpoint'), isFalse);
     expect(read(json(starts))?.replyEndpoint, replyEndpoint);
 
-    final elsewhere = encodeAddressPrefix(
-      AddressPrefix.of(
-        Origin.parse('https://elsewhere.example.com')!,
-        PathPrefix.parse('/')!,
+    final elsewhere = encodeReplyEndpoint(
+      RepliesUnderWebAddress(
+        AddressPrefix.of(
+          Origin.parse('https://elsewhere.example.com')!,
+          PathPrefix.parse('/')!,
+        ),
       ),
     );
     for (final bad in [
       json(starts)..remove('replyEndpoint'),
       json(starts)..['replyEndpoint'] = elsewhere,
       json(onTrajectory)
-        ..['replyEndpoint'] = encodeAddressPrefix(replyEndpoint),
+        ..['replyEndpoint'] = encodeReplyEndpoint(replyEndpoint),
       json(starts)..['replyEndpoint'] = 'https://smba.trafficmanager.net/',
     ]) {
       expect(read(bad), isNull, reason: '$bad');
     }
   });
 
-  test(
-    'a reply endpoint with a field beyond origin and pathPrefix is refused',
-    () {
+  test('a reply endpoint with an extra field, on it or in its address '
+      'prefix, is refused', () {
+    final good = encodeReplyEndpoint(replyEndpoint);
+    final prefix = good['addressPrefix']! as Map<String, Object?>;
+    for (final endpoint in [
+      {...good, 'extra': 1},
+      {
+        ...good,
+        'addressPrefix': {...prefix, 'extra': 1},
+      },
+    ]) {
       final entry = jsonDecode(
         utf8.decode(
           encodeDecision(
@@ -182,10 +195,6 @@ void main() {
           ).$2,
         ),
       ) as Map<String, Object?>;
-      final endpoint = {
-        ...(entry['replyEndpoint']! as Map<String, Object?>),
-        'extra': 1,
-      };
       entry['replyEndpoint'] = endpoint;
       (entry['translatedEvent']! as Map<String, Object?>)['replyEndpoint'] =
           endpoint;
@@ -195,9 +204,10 @@ void main() {
           Uint8List.fromList(utf8.encode(jsonEncode(entry))),
         ),
         isNull,
+        reason: '$endpoint',
       );
-    },
-  );
+    }
+  });
 
   test('a close names the trajectory it closes, and one that names none is '
       'refused', () {

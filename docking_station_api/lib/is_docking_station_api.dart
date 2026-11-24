@@ -14,5 +14,6 @@ library;
 
 export 'src/decision.dart';
 export 'src/decision_wire.dart';
+export 'src/reply_endpoint.dart';
 export 'src/translated_event.dart';
 export 'src/translated_event_wire.dart';
