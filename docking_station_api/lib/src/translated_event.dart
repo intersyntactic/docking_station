@@ -19,8 +19,8 @@ import 'package:is_conversation_shapes/is_conversation_shapes.dart'
 import 'package:is_content_id/is_content_id.dart' show ObjectId;
 import 'package:is_logbook_format/is_logbook_format.dart' show Kind;
 import 'package:is_shapes/is_shapes.dart' show ActorId, TrajectoryId;
-import 'package:is_web_address_vocabulary/is_web_address_vocabulary.dart'
-    show AddressPrefix;
+
+import 'reply_endpoint.dart';
 
 /// Where relayed events come from, such as `teams`: a lowercase letter, then
 /// lowercase letters, digits and `-`, as an address in an external system
@@ -211,7 +211,7 @@ sealed class AddressedEvent extends TranslatedEvent {
   /// Bot Connector that sent it, or null when the module can't name one. The
   /// module vouches for it, as the external system verified the event; the
   /// airlock grants a trajectory's replies to the one its start entry names.
-  final AddressPrefix? replyEndpoint;
+  final ReplyEndpoint? replyEndpoint;
 
   /// Who it comes from, or null for no one the module can name.
   ActorId? get from;
@@ -315,7 +315,7 @@ final class ActorsJoinedAddress extends AdmissibleEvent {
     required AddressInExternalSystem addressInExternalSystem,
     required AddressInExternalSystem? containingAddress,
     required ActorId? addressedTo,
-    required AddressPrefix? replyEndpoint,
+    required ReplyEndpoint? replyEndpoint,
     required ActorId? from,
     required EventKey key,
     required Iterable<ActorId> joiners,

@@ -2,6 +2,30 @@ Each version is tagged `docking_station_api-vX.Y.Z` on the commit it is
 published from. Versions up to 0.3.0 were published as
 `is_admission_vocabulary` and tagged `admission_vocabulary-vX.Y.Z`.
 
+## 0.5.0
+
+Breaking, in code and in the logbook: a start entry's reply endpoint
+changes shape, so 0.5.0 goes live only while the logbook holds no start
+entries.
+
+- Where replies go is `ReplyEndpoint`, sealed, one case for each way an
+  external system takes replies:
+  - `RepliesUnderWebAddress(prefix)`: replies go under a web address that
+    names the conversation, as Teams' Bot Connector takes them. This is
+    0.4.0's `AddressPrefix`, wrapped.
+  - `RepliesInSlackConversation(origin, channel, thread?)`: Slack takes
+    every reply at one address and names the conversation in the
+    request's body, so the reply is confined by `channel` and `thread`, and
+    `origin` is what a trajectory's rules allow it to reply through.
+    `SlackChannelId` and `SlackThreadTimestamp` parse Slack's forms.
+- `AddressedEvent.replyEndpoint`, `EventAdmittedToMission.replyEndpoint`
+  and path_start's `EntryStartsTrajectory.replyEndpoint` are
+  `ReplyEndpoint?`. path_start exports the type.
+- In the entries it is
+  `{"case": "under-web-address", "addressPrefix": {...}}` or
+  `{"case": "in-slack-conversation", "origin", "channel", "thread"?}`,
+  read strictly by `decodeReplyEndpoint`.
+
 ## 0.4.0
 
 Breaking, in code and in the logbook. Published only into a fresh logbook:

@@ -69,11 +69,12 @@ void main() {
     }
 
     expect(reached.difference(_allowed), isEmpty, reason: '$reached');
-    // And within this package, only path_start itself.
+    // And within this package, only path_start itself and the reply
+    // endpoint it reads beside the rules.
     final own = seen
         .where((f) => packageOf(f) == 'is_docking_station_api')
         .map((f) => f.pathSegments.last)
         .toSet();
-    expect(own, {'path_start.dart'}, reason: '$own');
+    expect(own, {'path_start.dart', 'reply_endpoint.dart'}, reason: '$own');
   });
 }

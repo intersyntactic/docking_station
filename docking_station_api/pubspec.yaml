@@ -3,7 +3,7 @@ description: >-
   The docking station's contract: what other parts of intersyntactic import
   to speak with it. The events a module translates for it, the decisions
   it records, and how both are encoded in the logbook.
-version: 0.4.0
+version: 0.5.0
 repository: https://github.com/intersyntactic/docking_station/tree/main/docking_station_api
 
 environment:
