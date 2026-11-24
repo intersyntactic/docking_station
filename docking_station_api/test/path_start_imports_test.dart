@@ -14,6 +14,7 @@ const _allowed = {
   'is_docking_station_api',
   'is_shapes',
   'is_content_id',
+  'is_reply_vocabulary',
   'is_web_address_vocabulary',
 };
 
@@ -69,12 +70,11 @@ void main() {
     }
 
     expect(reached.difference(_allowed), isEmpty, reason: '$reached');
-    // And within this package, only path_start itself and the reply
-    // endpoint it reads beside the rules.
+    // And within this package, only path_start itself.
     final own = seen
         .where((f) => packageOf(f) == 'is_docking_station_api')
         .map((f) => f.pathSegments.last)
         .toSet();
-    expect(own, {'path_start.dart', 'reply_endpoint.dart'}, reason: '$own');
+    expect(own, {'path_start.dart'}, reason: '$own');
   });
 }

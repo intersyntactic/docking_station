@@ -13,7 +13,10 @@ import 'package:is_shapes/is_shapes.dart'
     show DecidedBy, MissionId, TrajectoryId;
 
 import 'decision.dart';
-import 'reply_endpoint.dart';
+
+import 'package:is_reply_vocabulary/is_reply_vocabulary.dart'
+    show ReplyEndpoint, decodeReplyEndpoint, encodeReplyEndpoint;
+
 import 'translated_event.dart';
 import 'translated_event_wire.dart';
 
