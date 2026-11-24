@@ -2,7 +2,9 @@
 
 The docking station is the core piece that lets the outside world into
 trajectories. Something outside, such as Teams, sends bytes unasked. Its
-relay keeps them in the logbook exactly as they came, as an *event*. The
+relay records them in the logbook as an *event*: as they came, or, where
+they can carry credentials, only the fields its translator reads. Which one
+is the source's own choice, and only its translator reads them. The
 docking station reads events from the logbook in order and decides, for each
 one, whether it comes in and where it goes.
 
