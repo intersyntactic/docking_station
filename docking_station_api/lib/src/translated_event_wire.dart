@@ -14,7 +14,9 @@ import 'package:is_conversation_shapes/is_conversation_shapes.dart'
     show SourceMessageId, UserSaid, WhatChanged;
 import 'package:is_shapes/is_shapes.dart' show ActorId, TrajectoryId;
 
-import 'reply_endpoint.dart';
+import 'package:is_reply_vocabulary/is_reply_vocabulary.dart'
+    show decodeReplyEndpoint, encodeReplyEndpoint;
+
 import 'translated_event.dart';
 
 /// Every node shape a translated event can carry, by the field it travels in,

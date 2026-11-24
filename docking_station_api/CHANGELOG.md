@@ -2,6 +2,24 @@ Each version is tagged `docking_station_api-vX.Y.Z` on the commit it is
 published from. Versions up to 0.3.0 were published as
 `is_admission_vocabulary` and tagged `admission_vocabulary-vX.Y.Z`.
 
+## 0.6.0
+
+Breaking in code only. The logbook's JSON is unchanged, so 0.5.0 and
+0.6.0 read each other's entries.
+
+- `ReplyEndpoint`, its cases, `SlackChannelId` and
+  `encodeReplyEndpoint` / `decodeReplyEndpoint` are now declared in
+  [is_reply_vocabulary](https://pub.dev/packages/is_reply_vocabulary)
+  and re-exported from both libraries here, so drivers and the airlock
+  share one type without depending on this package. A package that also
+  imports is_reply_vocabulary needs this version: 0.5.0 declares its own
+  copy, which is a different type.
+- `SlackThreadTimestamp` is now `SlackMessageTimestamp`, since a Slack
+  timestamp names any message. The field is still `thread`.
+- `RelayedEvent.bytes` is what the source's relay recorded: the bytes as
+  they came, or only the fields its translator reads, where the rest can
+  carry credentials.
+
 ## 0.5.0
 
 Breaking, in code and in the logbook: a start entry's reply endpoint

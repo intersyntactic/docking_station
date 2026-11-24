@@ -1,105 +1,41 @@
-// Where replies go is read back exactly as written, and strictly: the
-// airlock grants a trajectory's replies to it, so nothing about it may be
-// guessed.
-import 'package:is_docking_station_api/is_docking_station_api.dart';
-import 'package:is_web_address_vocabulary/is_web_address_vocabulary.dart'
-    show AddressPrefix, Origin, PathPrefix;
+// Where replies go is declared by is_reply_vocabulary alone. This package
+// re-exports it, so a package that imports both sees one type, and a
+// pattern on one package's case matches a value made by the other's.
+import 'package:is_docking_station_api/is_docking_station_api.dart' as api;
+import 'package:is_docking_station_api/path_start.dart' as path_start;
+import 'package:is_reply_vocabulary/is_reply_vocabulary.dart' as vocabulary;
 import 'package:test/test.dart';
 
-final _slack = Origin.parse('https://slack.com')!;
-
 void main() {
-  test('each case reads back as itself', () {
-    for (final endpoint in <ReplyEndpoint>[
-      RepliesUnderWebAddress(
-        AddressPrefix.of(
-          Origin.parse('https://smba.trafficmanager.net')!,
-          PathPrefix.parse('/amer/v3/conversations/19:x/activities/')!,
-        ),
+  test('each reply type is the vocabulary\'s own, from either library', () {
+    final pairs = <(Type, Type, Type)>[
+      (api.ReplyEndpoint, path_start.ReplyEndpoint, vocabulary.ReplyEndpoint),
+      (
+        api.RepliesUnderWebAddress,
+        path_start.RepliesUnderWebAddress,
+        vocabulary.RepliesUnderWebAddress,
       ),
-      RepliesInSlackConversation(
-        origin: _slack,
-        channel: SlackChannelId.parse('C0123ABC')!,
-        thread: SlackThreadTimestamp.parse('1700000000.000100'),
+      (
+        api.RepliesInSlackConversation,
+        path_start.RepliesInSlackConversation,
+        vocabulary.RepliesInSlackConversation,
       ),
-      RepliesInSlackConversation(
-        origin: _slack,
-        channel: SlackChannelId.parse('D0456DEF')!,
+      (
+        api.SlackChannelId,
+        path_start.SlackChannelId,
+        vocabulary.SlackChannelId,
       ),
-    ]) {
-      final json = encodeReplyEndpoint(endpoint);
-      expect(decodeReplyEndpoint(json, 'replyEndpoint'), endpoint);
-    }
-  });
-
-  test('a Slack conversation is written as its origin, channel and thread', () {
-    expect(
-      encodeReplyEndpoint(
-        RepliesInSlackConversation(
-          origin: _slack,
-          channel: SlackChannelId.parse('C0123ABC')!,
-          thread: SlackThreadTimestamp.parse('1700000000.000100'),
-        ),
+      (
+        api.SlackMessageTimestamp,
+        path_start.SlackMessageTimestamp,
+        vocabulary.SlackMessageTimestamp,
       ),
-      {
-        'case': 'in-slack-conversation',
-        'origin': 'https://slack.com',
-        'channel': 'C0123ABC',
-        'thread': '1700000000.000100',
-      },
-    );
-  });
-
-  test('anything else is refused, naming the field', () {
-    final slack = {
-      'case': 'in-slack-conversation',
-      'origin': 'https://slack.com',
-      'channel': 'C0123ABC',
-    };
-    for (final json in <Object?>[
-      'https://slack.com',
-      {...slack, 'case': 'somewhere-else'},
-      {...slack}..remove('case'),
-      {...slack}..remove('origin'),
-      {...slack}..remove('channel'),
-      {...slack, 'channel': 'general'},
-      {...slack, 'thread': 'yesterday'},
-      {...slack, 'thread': null},
-      {...slack, 'extra': 1},
-      {'case': 'under-web-address'},
-      {
-        'case': 'under-web-address',
-        'addressPrefix': {'origin': 'https://x.example', 'pathPrefix': '/'},
-        'channel': 'C0123ABC',
-      },
-    ]) {
-      expect(
-        () => decodeReplyEndpoint(json, 'replyEndpoint'),
-        throwsA(
-          isA<FormatException>().having(
-            (e) => e.message,
-            'message',
-            startsWith('replyEndpoint'),
-          ),
-        ),
-        reason: '$json',
-      );
+    ];
+    for (final (fromApi, fromPathStart, own) in pairs) {
+      expect(fromApi, own);
+      expect(fromPathStart, own);
     }
-  });
-
-  test('a Slack id or thread timestamp parses only in Slack\'s form', () {
-    for (final s in ['C0123ABC', 'D0456DEF', 'G0789GHI']) {
-      expect(SlackChannelId.parse(s)?.value, s);
-    }
-    for (final s in ['', 'c0123abc', 'U0123ABC', '#general', 'C']) {
-      expect(SlackChannelId.parse(s), isNull, reason: s);
-    }
-    expect(
-      SlackThreadTimestamp.parse('1700000000.000100')?.value,
-      '1700000000.000100',
-    );
-    for (final s in ['', '1700000000', '.5', '17.x', '1700000000.000100 ']) {
-      expect(SlackThreadTimestamp.parse(s), isNull, reason: s);
-    }
+    expect(api.encodeReplyEndpoint, same(vocabulary.encodeReplyEndpoint));
+    expect(api.decodeReplyEndpoint, same(vocabulary.decodeReplyEndpoint));
   });
 }

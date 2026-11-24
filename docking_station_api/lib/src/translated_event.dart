@@ -20,7 +20,8 @@ import 'package:is_content_id/is_content_id.dart' show ObjectId;
 import 'package:is_logbook_format/is_logbook_format.dart' show Kind;
 import 'package:is_shapes/is_shapes.dart' show ActorId, TrajectoryId;
 
-import 'reply_endpoint.dart';
+import 'package:is_reply_vocabulary/is_reply_vocabulary.dart'
+    show ReplyEndpoint;
 
 /// Where relayed events come from, such as `teams`: a lowercase letter, then
 /// lowercase letters, digits and `-`, as an address in an external system
