@@ -1,6 +1,16 @@
 Each version is tagged `service-vX.Y.Z` on the commit it is built from, and a
 deploy names the tag.
 
+## 0.5.0
+
+On is_flight_rules ^0.6.0, and is_effects 0.14.3 through it. The rules
+config must be in 0.6.0's shape: each mission's rules carry `givenTools`
+(an empty list is valid), and a query option is
+`{"name", "presence", "wordsFrom"}` under `queryOptions`. The service reads
+the config with `FlightRules.fromJson` and refuses to start on a file it
+can't read, and 0.6.0 reads no 0.5.0 rules, so it starts only where no
+trajectory was started under 0.5.0 rules.
+
 ## 0.4.1
 
 - On teams_module v0.0.7, the commit the fresh-logbook window deploys, so
