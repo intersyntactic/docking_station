@@ -1,9 +1,10 @@
-// Where replies go is declared by is_reply_vocabulary alone. This package
+// Where replies go is declared by is_conversation_reply_vocabulary alone. This package
 // re-exports it, so a package that imports both sees one type, and a
 // pattern on one package's case matches a value made by the other's.
 import 'package:is_docking_station_api/is_docking_station_api.dart' as api;
 import 'package:is_docking_station_api/path_start.dart' as path_start;
-import 'package:is_reply_vocabulary/is_reply_vocabulary.dart' as vocabulary;
+import 'package:is_conversation_reply_vocabulary/is_conversation_reply_vocabulary.dart'
+    as vocabulary;
 import 'package:test/test.dart';
 
 void main() {

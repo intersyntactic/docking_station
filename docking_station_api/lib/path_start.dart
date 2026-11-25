@@ -2,7 +2,7 @@
 /// decoding what strangers sent: for the airlock.
 library;
 
-export 'package:is_reply_vocabulary/is_reply_vocabulary.dart'
+export 'package:is_conversation_reply_vocabulary/is_conversation_reply_vocabulary.dart'
     show
         ReplyEndpoint,
         RepliesInSlackConversation,

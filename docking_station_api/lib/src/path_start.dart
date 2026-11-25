@@ -17,7 +17,7 @@ import 'package:is_content_id/is_content_id.dart' show ObjectId;
 import 'package:is_shapes/is_shapes.dart'
     show DecidedBy, MissionId, TrajectoryId;
 
-import 'package:is_reply_vocabulary/is_reply_vocabulary.dart'
+import 'package:is_conversation_reply_vocabulary/is_conversation_reply_vocabulary.dart'
     show ReplyEndpoint, decodeReplyEndpoint;
 
 /// What an `event-admitted-to-mission` entry says about the trajectories it

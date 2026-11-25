@@ -12,7 +12,7 @@
 /// `path_start.dart` instead, which never decodes what strangers sent.
 library;
 
-export 'package:is_reply_vocabulary/is_reply_vocabulary.dart'
+export 'package:is_conversation_reply_vocabulary/is_conversation_reply_vocabulary.dart'
     show
         ReplyEndpoint,
         RepliesInSlackConversation,

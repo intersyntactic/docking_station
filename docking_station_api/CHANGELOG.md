@@ -2,6 +2,17 @@ Each version is tagged `docking_station_api-vX.Y.Z` on the commit it is
 published from. Versions up to 0.3.0 were published as
 `is_admission_vocabulary` and tagged `admission_vocabulary-vX.Y.Z`.
 
+## 0.8.0
+
+Breaking in code only. The logbook's JSON is unchanged.
+
+- Depends on is_conversation_reply_vocabulary ^0.1.0, is_reply_vocabulary's
+  new name, instead of the old name. `ReplyEndpoint` and the other reply
+  types now come from the new package. Dart treats them as different
+  types from is_reply_vocabulary's, so a program that still reaches
+  is_reply_vocabulary, directly or through another package, must move
+  to is_conversation_reply_vocabulary as well.
+
 ## 0.7.0
 
 Breaking in code only. The logbook's JSON is unchanged.

@@ -16,7 +16,7 @@ const _allowed = {
   'is_docking_station_api',
   'is_shapes',
   'is_content_id',
-  'is_reply_vocabulary',
+  'is_conversation_reply_vocabulary',
   'is_web_address_vocabulary',
 };
 
