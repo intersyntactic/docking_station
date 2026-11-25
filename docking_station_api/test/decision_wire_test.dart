@@ -180,13 +180,12 @@ void main() {
   test('a reply endpoint with an extra field, on it or in its address '
       'prefix, is refused', () {
     final good = encodeReplyEndpoint(replyEndpoint);
-    final prefix = good['addressPrefix']! as Map<String, Object?>;
+    final prefix = good.object('addressPrefix');
     for (final endpoint in [
-      {...good, 'extra': 1},
-      {
-        ...good,
-        'addressPrefix': {...prefix, 'extra': 1},
-      },
+      good.withFields({'extra': 1}),
+      good.withFields({
+        'addressPrefix': prefix.withFields({'extra': 1}),
+      }),
     ]) {
       final entry = jsonDecode(
         utf8.decode(

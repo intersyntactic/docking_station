@@ -2,6 +2,15 @@ Each version is tagged `docking_station_api-vX.Y.Z` on the commit it is
 published from. Versions up to 0.3.0 were published as
 `is_admission_vocabulary` and tagged `admission_vocabulary-vX.Y.Z`.
 
+## 0.7.0
+
+Breaking in code only. The logbook's JSON is unchanged.
+
+- On is_reply_vocabulary ^0.2.0, so the re-exported `encodeReplyEndpoint`
+  returns a checked_json `JsonObject` instead of a `Map`.
+- path_start may reach checked_json, which is trusted: it reads fields of
+  a value already decoded as JSON and decodes nothing a stranger shaped.
+
 ## 0.6.0
 
 Breaking in code only. The logbook's JSON is unchanged, so 0.5.0 and
