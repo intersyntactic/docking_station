@@ -9,8 +9,10 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 /// The packages path_start.dart may reach: this one, the three it names,
-/// and what they import.
+/// and what they import. checked_json is trusted: it reads fields of a
+/// value already decoded as JSON, and decodes nothing a stranger shaped.
 const _allowed = {
+  'checked_json',
   'is_docking_station_api',
   'is_shapes',
   'is_content_id',
