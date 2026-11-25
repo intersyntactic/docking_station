@@ -12,6 +12,11 @@ Breaking in code only. The logbook's JSON is unchanged.
   types from is_reply_vocabulary's, so a program that still reaches
   is_reply_vocabulary, directly or through another package, must move
   to is_conversation_reply_vocabulary as well.
+- No longer re-exports the reply types. `ReplyEndpoint`,
+  `RepliesUnderWebAddress`, `RepliesInSlackConversation`, `SlackChannelId`,
+  `SlackMessageTimestamp`, `encodeReplyEndpoint` and `decodeReplyEndpoint`
+  are imported from is_conversation_reply_vocabulary, which a consumer
+  depends on directly.
 
 ## 0.7.0
 

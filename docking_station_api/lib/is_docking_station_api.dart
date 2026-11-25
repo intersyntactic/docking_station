@@ -12,16 +12,6 @@
 /// `path_start.dart` instead, which never decodes what strangers sent.
 library;
 
-export 'package:is_conversation_reply_vocabulary/is_conversation_reply_vocabulary.dart'
-    show
-        ReplyEndpoint,
-        RepliesInSlackConversation,
-        RepliesUnderWebAddress,
-        SlackChannelId,
-        SlackMessageTimestamp,
-        decodeReplyEndpoint,
-        encodeReplyEndpoint;
-
 export 'src/decision.dart';
 export 'src/decision_wire.dart';
 export 'src/translated_event.dart';
