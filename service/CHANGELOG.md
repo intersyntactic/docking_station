@@ -1,6 +1,16 @@
 Each version is tagged `service-vX.Y.Z` on the commit it is built from, and a
 deploy names the tag.
 
+## 0.7.0
+
+The ReplyEndpoint window's build, on the newest of every intersyntactic
+package so all five builds in it lock the same versions:
+is_docking_station_api ^0.6.0 (ReplyEndpoint from is_reply_vocabulary,
+JSON unchanged), is_flight_rules ^0.7.0 (JSON unchanged apart from refusing
+a badly formed tool name) with is_effects 0.15.0 through it, and
+teams_module v0.0.10. Goes live under the same condition as 0.6.0, which
+never deployed.
+
 ## 0.6.0
 
 On is_docking_station_api ^0.5.0 and teams_module v0.0.9, for the

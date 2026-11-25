@@ -61,10 +61,10 @@ packages:
     dependency: transitive
     description:
       name: cli_util
-      sha256: "89b8801ba49f8b593fbf2d3e59efd0f566c46cd4ba6837ae2610c72b52a0f899"
+      sha256: da2a2b22f919995eb427edab07725e2be0b1281ef26770f6ce3a213355565262
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.0"
+    version: "0.6.1"
   collection:
     dependency: transitive
     description:
@@ -85,10 +85,10 @@ packages:
     dependency: transitive
     description:
       name: coverage
-      sha256: ff89e37c19355194e279d26dafe8e4bece46c9ea63a30be4dc68214f5bc290d3
+      sha256: "8877574b53777c6627f436538eaf4a0485eebb49e19a3cace38474af60584613"
       url: "https://pub.dev"
     source: hosted
-    version: "1.16.0"
+    version: "1.16.2"
   crypto:
     dependency: transitive
     description:
@@ -181,26 +181,26 @@ packages:
     dependency: "direct main"
     description:
       name: is_docking_station_api
-      sha256: cb2c228c8f01ed8fae796a6e0626de512d0210d4659d9f566c059fdd65024392
+      sha256: "7229805d1b8a62bd4e4fcf0601063cbe73bb26ee8bb2ac8614fa182d81e68dc4"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.0"
+    version: "0.6.0"
   is_effects:
     dependency: transitive
     description:
       name: is_effects
-      sha256: "0b322e4efe7313479b09121b44c8d49dbf3f0794a9a46da41efcd8cefa937ab7"
+      sha256: bea7444e36b51bf749b2fa0fc3e69a7f9d49b657475e6be5f792d3d046c9175c
       url: "https://pub.dev"
     source: hosted
-    version: "0.14.3"
+    version: "0.15.0"
   is_flight_rules:
     dependency: "direct main"
     description:
       name: is_flight_rules
-      sha256: "45e0d210466b8d435f42f53077123cf4553a95a8acfef8ac783e6ebbddd47cab"
+      sha256: "67e10e598f484c0b9e93035275a94862a82af3261f48dcf688899cc86bea7855"
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.0"
+    version: "0.7.0"
   is_logbook_client:
     dependency: "direct main"
     description:
@@ -217,6 +217,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.0"
+  is_model_vocabulary:
+    dependency: transitive
+    description:
+      name: is_model_vocabulary
+      sha256: "48927abc9d91422f92e370dc8a7698a2ee29c4bfa44712f5e88c9ab126185e57"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.0"
   is_path_confinement:
     dependency: transitive
     description:
@@ -225,6 +233,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.0"
+  is_reply_vocabulary:
+    dependency: transitive
+    description:
+      name: is_reply_vocabulary
+      sha256: "58db7570c6e118b5207ac13435f6e7b44c98ad5471531f458829b35fd07b0a78"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.2"
   is_shapes:
     dependency: "direct main"
     description:
@@ -245,27 +261,27 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v0.0.9"
-      resolved-ref: "5235a157f115ac7a981fdd13f948ff11e48e46f3"
+      ref: "v0.0.10"
+      resolved-ref: "8f21559924cf948cc670f85b00aadbfb87154f77"
       url: "https://github.com/intersyntactic/teams_module.git"
     source: git
-    version: "0.0.9"
+    version: "0.0.10"
   is_tools_api:
     dependency: transitive
     description:
       name: is_tools_api
-      sha256: "9d330a9c80eae3b88d71322d0981d0d0c6483a2fcdd1d5f4f6452fba2dc7daf9"
+      sha256: d9b98198b03b0d249a67a0ce4babf50bc2dd0896188ed069b4fe731ef8d7c389
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.0"
+    version: "0.5.0"
   is_web_address_vocabulary:
     dependency: transitive
     description:
       name: is_web_address_vocabulary
-      sha256: "232241a06a2871213e110f52f01c8c68b6c98fdcdf00fcfb491c8e24d10d8dac"
+      sha256: a0b58425fc7eaf98e740cdfac614201fa426594fafdf198903e961f0ee4ed6dd
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.1"
+    version: "0.1.2"
   lints:
     dependency: "direct dev"
     description:
