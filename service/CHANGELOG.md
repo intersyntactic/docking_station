@@ -1,6 +1,15 @@
 Each version is tagged `service-vX.Y.Z` on the commit it is built from, and a
 deploy names the tag.
 
+## 0.6.0
+
+On is_docking_station_api ^0.5.0 and teams_module v0.0.9, for the
+ReplyEndpoint window. A start entry's reply endpoint is the sealed
+`ReplyEndpoint` (`{"case": "under-web-address", ...}`), which 0.5.x's
+readers can't read and 0.5.x wrote in a form this can't read, so it goes
+live only while the logbook holds no start entries, alongside the airlock,
+agent_loop and loop_launcher releases that read the same form.
+
 ## 0.5.1
 
 - On teams_module v0.0.8, the commit the flight_rules 0.6.0 window deploys,
