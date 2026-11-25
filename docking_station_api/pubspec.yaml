@@ -3,7 +3,7 @@ description: >-
   The docking station's contract: what other parts of intersyntactic import
   to speak with it. The events a module translates for it, the decisions
   it records, and how both are encoded in the logbook.
-version: 0.6.0
+version: 0.7.0
 repository: https://github.com/intersyntactic/docking_station/tree/main/docking_station_api
 
 environment:
@@ -19,7 +19,7 @@ dependencies:
   is_logbook_format: ^0.1.0
   is_shapes: ^0.6.0
   # Where replies go, declared there alone, so every package shares one type.
-  is_reply_vocabulary: ^0.1.0
+  is_reply_vocabulary: ^0.2.0
 
 dev_dependencies:
   is_web_address_vocabulary: ^0.1.2
