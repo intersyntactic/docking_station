@@ -80,6 +80,7 @@ final class _Logbook {
       id: ObjectId.of(bytes),
       kind: Kind.parse(kind)!,
       previous: previous,
+      trajectory: null,
       recorded: bytes,
     );
     _entries.add(entry);

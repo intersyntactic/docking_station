@@ -1,6 +1,14 @@
 Each version is tagged `service-vX.Y.Z` on the commit it is built from, and a
 deploy names the tag.
 
+## 0.9.0
+
+On is_logbook_client ^0.4.0, which reads is_logbook 0.5.0's entry lines,
+now with a trajectory word on each. 0.8.0's client 0.3.0 refuses every
+entry from a 0.5.0 logbook, and this one reads only 0.5.0's, so it deploys
+together with the logbook's move to 0.5.0. Every other package is as 0.8.0
+locked it.
+
 ## 0.8.0
 
 The ReplyEndpoint window's build, on the set frozen at 25 Nov 16:51 AEDT
