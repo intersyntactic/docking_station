@@ -169,6 +169,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.0"
+  is_conversation_reply_vocabulary:
+    dependency: transitive
+    description:
+      name: is_conversation_reply_vocabulary
+      sha256: "2c2f7d8e460a15ace0fcdd92c2a22aed51e8f92dedd507902d310a70573e50cf"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0"
   is_conversation_shapes:
     dependency: "direct main"
     description:
@@ -181,26 +189,26 @@ packages:
     dependency: "direct main"
     description:
       name: is_docking_station_api
-      sha256: "464cf0649057724fc83a8efc413f1d4381a0d95e90465438257828cdc3e8a84e"
+      sha256: "0bd0de5c076f7321415696a5761d3f86cf933659c66565b0c16e221a1775f021"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.0"
+    version: "0.8.0"
   is_effects:
     dependency: transitive
     description:
       name: is_effects
-      sha256: bea7444e36b51bf749b2fa0fc3e69a7f9d49b657475e6be5f792d3d046c9175c
+      sha256: "2d1014ac6b36a7658910a0278b573277fe3cac4be0533e597734bd89c908727a"
       url: "https://pub.dev"
     source: hosted
-    version: "0.15.0"
+    version: "0.17.0"
   is_flight_rules:
     dependency: "direct main"
     description:
       name: is_flight_rules
-      sha256: "67e10e598f484c0b9e93035275a94862a82af3261f48dcf688899cc86bea7855"
+      sha256: ba9415bd884292ba515dd1e43649d6d0ded658a76c1915aa391c6ec92e38e5c0
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.0"
+    version: "0.9.0"
   is_logbook_client:
     dependency: "direct main"
     description:
@@ -233,11 +241,11 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.0"
-  is_reply_vocabulary:
+  is_reply_requests_api:
     dependency: transitive
     description:
-      name: is_reply_vocabulary
-      sha256: da0e47b45ee22fef87e6b81dcb8a24adf954c46ff50b62952cd12f5699398e65
+      name: is_reply_requests_api
+      sha256: ed7e249adc312b30a1fa780af99308a2d8bb5f09ed9b0efe1e6b6da8e2edbfe8
       url: "https://pub.dev"
     source: hosted
     version: "0.2.0"
@@ -261,11 +269,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v0.0.11"
-      resolved-ref: "0e9fb9a8097ab38d01faf260bd332196f0c6cb78"
+      ref: "536830bb151ff0529e3cbd81655a5bbb2f7ae943"
+      resolved-ref: "536830bb151ff0529e3cbd81655a5bbb2f7ae943"
       url: "https://github.com/intersyntactic/teams_module.git"
     source: git
-    version: "0.0.11"
+    version: "0.0.13"
   is_tools_api:
     dependency: transitive
     description:
