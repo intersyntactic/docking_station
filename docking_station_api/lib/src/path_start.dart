@@ -13,11 +13,13 @@ library;
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:checked_json/checked_json.dart'
+    show decodeJsonRefusingDuplicateKeysAndUnsafeIntegers;
 import 'package:is_content_id/is_content_id.dart' show ObjectId;
 import 'package:is_shapes/is_shapes.dart'
     show DecidedBy, MissionId, TrajectoryId;
 
-import 'package:is_conversation_reply_vocabulary/is_conversation_reply_vocabulary.dart'
+import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
     show ReplyEndpoint, decodeReplyEndpoint;
 
 /// What an `event-admitted-to-mission` entry says about the trajectories it
@@ -93,7 +95,9 @@ AdmittedTrajectoryEntry<R> readTrajectoryStart<R>(
 
   final Object? decoded;
   try {
-    decoded = jsonDecode(utf8.decode(Uint8List.sublistView(entry, second + 1)));
+    decoded = decodeJsonRefusingDuplicateKeysAndUnsafeIntegers(
+      utf8.decode(Uint8List.sublistView(entry, second + 1)),
+    );
   } on FormatException catch (e) {
     return unreadable('not JSON: ${e.message}');
   }

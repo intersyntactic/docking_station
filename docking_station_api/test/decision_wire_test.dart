@@ -7,10 +7,14 @@ import 'dart:typed_data';
 import 'package:checked_json/checked_json.dart' show JsonObject;
 import 'package:is_annotation_shapes/is_annotation_shapes.dart'
     show ProposedCorrectionVerdict;
-import 'package:is_conversation_shapes/is_conversation_shapes.dart'
-    show Deleted, Edited, SourceMessageId, UserSaid;
-import 'package:is_conversation_reply_vocabulary/is_conversation_reply_vocabulary.dart'
-    show RepliesUnderWebAddress, encodeReplyEndpoint;
+import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
+    show
+        Deleted,
+        Edited,
+        RepliesUnderWebAddress,
+        SourceMessageId,
+        UserSaid,
+        encodeReplyEndpoint;
 import 'package:is_docking_station_api/is_docking_station_api.dart';
 import 'package:is_logbook_format/is_logbook_format.dart' show Kind, ObjectId;
 import 'package:is_shapes/is_shapes.dart'
@@ -209,6 +213,27 @@ void main() {
       );
     }
   });
+
+  test(
+    'an entry naming a field twice is refused, even with the same value',
+    () {
+      final (kind, body) = encodeDecision(
+        _admitted(const StartsTrajectory(StartsMission()), DecidedBy.rules),
+      );
+      final text = utf8.decode(body);
+      final MapEntry(:key, :value) =
+          (jsonDecode(text) as Map<String, Object?>).entries.first;
+      final twice = text.replaceFirst(
+        '{',
+        '{${jsonEncode(key)}:${jsonEncode(value)},',
+      );
+      expect(decodeDecision(kind, body), isNotNull);
+      expect(
+        decodeDecision(kind, Uint8List.fromList(utf8.encode(twice))),
+        isNull,
+      );
+    },
+  );
 
   test('a close names the trajectory it closes, and one that names none is '
       'refused', () {

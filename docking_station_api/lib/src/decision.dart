@@ -26,14 +26,11 @@
 library;
 
 import 'package:checked_json/checked_json.dart' show JsonObject;
-import 'package:is_conversation_shapes/is_conversation_shapes.dart'
-    show SourceMessageId;
+import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
+    show ReplyEndpoint, SourceMessageId;
 import 'package:is_logbook_format/is_logbook_format.dart' show Kind, ObjectId;
 import 'package:is_shapes/is_shapes.dart'
     show ActorId, DecidedBy, MissionId, TrajectoryId;
-
-import 'package:is_conversation_reply_vocabulary/is_conversation_reply_vocabulary.dart'
-    show ReplyEndpoint;
 
 import 'translated_event.dart';
 
