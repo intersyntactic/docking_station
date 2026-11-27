@@ -17,7 +17,7 @@ dependencies:
   is_content_id: ^0.2.0
   # What people said and where replies go, declared there alone, so every
   # package shares one type.
-  is_conversation_vocabulary: ^0.1.0
+  is_conversation_vocabulary: ^0.1.1
   is_logbook_format: ^0.1.0
   is_shapes: ^0.6.0
 

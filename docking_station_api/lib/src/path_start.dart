@@ -19,7 +19,9 @@ import 'package:is_content_id/is_content_id.dart' show ObjectId;
 import 'package:is_shapes/is_shapes.dart'
     show DecidedBy, MissionId, TrajectoryId;
 
-import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
+// The reply endpoint alone: the package's main library also decodes what
+// people said, which the airlock must never load.
+import 'package:is_conversation_vocabulary/reply_endpoint.dart'
     show ReplyEndpoint, decodeReplyEndpoint;
 
 /// What an `event-admitted-to-mission` entry says about the trajectories it
