@@ -6,8 +6,12 @@ deploy names the tag.
 On is_logbook_client ^0.4.0, which reads is_logbook 0.5.0's entry lines,
 now with a trajectory word on each. 0.8.0's client 0.3.0 refuses every
 entry from a 0.5.0 logbook, and this one reads only 0.5.0's, so it deploys
-together with the logbook's move to 0.5.0. Every other package is as 0.8.0
-locked it.
+together with the logbook's move to 0.5.0.
+
+Also off is_reply_vocabulary, onto its new name
+is_conversation_reply_vocabulary: is_docking_station_api ^0.8.0, which no
+longer re-exports the reply types, is_flight_rules ^0.9.0 with is_effects
+0.17.0, and teams_module v0.0.13.
 
 ## 0.8.0
 
