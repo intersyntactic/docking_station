@@ -28,6 +28,10 @@ const _allowedConversationVocabularyFiles = {
   'strict_object_reader.dart',
 };
 
+/// The files of this package path_start.dart may reach: itself, and the
+/// translated event's case names, which import nothing.
+const _allowedOwnFiles = {'path_start.dart', 'translated_event_case.dart'};
+
 final _directive = RegExp(
   r'''^\s*(?:import|export|part)\s+['"]([^'"]+)['"]''',
   multiLine: true,
@@ -80,12 +84,12 @@ void main() {
     }
 
     expect(reached.difference(_allowed), isEmpty, reason: '$reached');
-    // And within this package, only path_start itself.
+    // And within this package, only path_start and the case names.
     final own = seen
         .where((f) => packageOf(f) == 'is_docking_station_api')
         .map((f) => f.pathSegments.last)
         .toSet();
-    expect(own, {'path_start.dart'}, reason: '$own');
+    expect(own.difference(_allowedOwnFiles), isEmpty, reason: '$own');
     final conversation = seen
         .where((f) => packageOf(f) == 'is_conversation_vocabulary')
         .map((f) => f.pathSegments.last)

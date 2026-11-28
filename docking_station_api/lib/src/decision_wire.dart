@@ -5,8 +5,7 @@ library;
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:checked_json/checked_json.dart'
-    show JsonObject, decodeJsonRefusingDuplicateKeysAndUnsafeIntegers;
+import 'package:checked_json/checked_json.dart' show JsonObject;
 import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
     show
         ReplyEndpoint,
@@ -84,7 +83,12 @@ import 'translated_event_wire.dart';
           json['of'] = of.hex;
         case ChangeToUnadmittedMessage(:final message):
           json['message'] = message.value;
-        case _:
+        case NoTranslatorForSource() ||
+            TranslatorFoundNothing() ||
+            AddressNotAdmittedToMission() ||
+            SaidStartsNoTurn() ||
+            JudgedMessageHasNoTrajectory() ||
+            CloseAskedForTrajectoryNotOpenAtAddress():
           break;
       }
   }
@@ -106,37 +110,62 @@ void _mission(Map<String, Object?> json, MissionPlacement mission) {
   }
 }
 
-String _why(EventNotAdmittedToMission declined) => switch (declined) {
-  NoTranslatorForSource() => 'no-translator-for-source',
-  TranslatorFoundNothing() => 'translator-found-nothing',
-  DuplicateEvent() => 'duplicate-event',
-  AddressNotAdmittedToMission() => 'address-not-admitted-to-mission',
-  SaidStartsNoTurn() => 'said-starts-no-turn',
-  JudgedMessageHasNoTrajectory() => 'judged-message-has-no-trajectory',
-  CloseAskedForTrajectoryNotOpenAtAddress() =>
+String _why(EventNotAdmittedToMission declined) =>
+    _NotAdmittedWhy.of(declined).wire;
+
+/// Why an event was not admitted, as the `why` field writes it.
+enum _NotAdmittedWhy {
+  noTranslatorForSource('no-translator-for-source'),
+  translatorFoundNothing('translator-found-nothing'),
+  duplicateEvent('duplicate-event'),
+  addressNotAdmittedToMission('address-not-admitted-to-mission'),
+  saidStartsNoTurn('said-starts-no-turn'),
+  judgedMessageHasNoTrajectory('judged-message-has-no-trajectory'),
+  closeAskedForTrajectoryNotOpenAtAddress(
     'close-asked-for-trajectory-not-open-at-address',
-  ChangeToUnadmittedMessage() => 'change-to-unadmitted-message',
-};
+  ),
+  changeToUnadmittedMessage('change-to-unadmitted-message');
+
+  const _NotAdmittedWhy(this.wire);
+
+  final String wire;
+
+  static final _byWire = {for (final why in values) why.wire: why};
+
+  /// The reason [wire] names; null for any other string.
+  static _NotAdmittedWhy? parse(String wire) => _byWire[wire];
+
+  static _NotAdmittedWhy of(EventNotAdmittedToMission declined) =>
+      switch (declined) {
+        NoTranslatorForSource() => noTranslatorForSource,
+        TranslatorFoundNothing() => translatorFoundNothing,
+        DuplicateEvent() => duplicateEvent,
+        AddressNotAdmittedToMission() => addressNotAdmittedToMission,
+        SaidStartsNoTurn() => saidStartsNoTurn,
+        JudgedMessageHasNoTrajectory() => judgedMessageHasNoTrajectory,
+        CloseAskedForTrajectoryNotOpenAtAddress() =>
+          closeAskedForTrajectoryNotOpenAtAddress,
+        ChangeToUnadmittedMessage() => changeToUnadmittedMessage,
+      };
+}
 
 /// The entry of [kind] with [body], read back as the decision it holds.
 /// Null for anything [encodeDecision] doesn't write, an extra field
 /// included: it is our own wire, read strictly.
 AdmissionDecision? decodeDecision(Kind kind, Uint8List body) {
-  final Object? json;
+  final JsonObject json;
   try {
-    json = decodeJsonRefusingDuplicateKeysAndUnsafeIntegers(utf8.decode(body));
+    json = JsonObject.decode(utf8.decode(body));
   } on FormatException {
     return null;
   }
-  if (json is! Map<String, Object?>) return null;
-  final by = _read(json['by'], _decidedBy);
+  final by = _read(json.raw('by'), _decidedBy);
   if (by == null) return null;
   // A close by an operator is the one decision at no event.
-  if (kind == DecisionEntryKind.trajectoryClosed &&
-      !json.containsKey('event')) {
+  if (kind == DecisionEntryKind.trajectoryClosed && !json.has('event')) {
     return _closedByOperator(by, json);
   }
-  final event = _read(json['event'], ObjectId.parse);
+  final event = _read(json.raw('event'), ObjectId.parse);
   if (event == null) return null;
   if (kind == DecisionEntryKind.eventAdmittedToMission) {
     return _admitted(event, by, json);
@@ -145,8 +174,8 @@ AdmissionDecision? decodeDecision(Kind kind, Uint8List body) {
     return _notAdmitted(event, by, json);
   }
   if (kind == DecisionEntryKind.missionEnded) {
-    final mission = _read(json['mission'], MissionId.parse);
-    if (mission == null || json.length != 3) return null;
+    final mission = _read(json.raw('mission'), MissionId.parse);
+    if (mission == null || json.keys.length != 3) return null;
     return MissionEnded(event, by: by, mission: mission);
   }
   if (kind == DecisionEntryKind.trajectoryClosed) {
@@ -158,15 +187,15 @@ AdmissionDecision? decodeDecision(Kind kind, Uint8List body) {
 TrajectoryClosedBecausePersonAsked? _closed(
   ObjectId event,
   DecidedBy by,
-  Map<String, Object?> json,
+  JsonObject json,
 ) {
   final translatedEvent = _translatedEvent(json);
-  final trajectory = _read(json['trajectory'], TrajectoryId.parse);
-  final mission = _read(json['mission'], MissionId.parse);
+  final trajectory = _read(json.raw('trajectory'), TrajectoryId.parse);
+  final mission = _read(json.raw('mission'), MissionId.parse);
   if (translatedEvent is! PersonAskedToCloseTrajectory ||
       trajectory == null ||
       mission == null ||
-      json.length != 5) {
+      json.keys.length != 5) {
     return null;
   }
   return TrajectoryClosedBecausePersonAsked(
@@ -178,21 +207,18 @@ TrajectoryClosedBecausePersonAsked? _closed(
   );
 }
 
-TrajectoryClosedByOperator? _closedByOperator(
-  DecidedBy by,
-  Map<String, Object?> json,
-) {
-  final trajectory = _read(json['trajectory'], TrajectoryId.parse);
-  final mission = _read(json['mission'], MissionId.parse);
-  final operator = _read(json['operator'], OperatorName.parse);
-  final reason = json['reason'];
+TrajectoryClosedByOperator? _closedByOperator(DecidedBy by, JsonObject json) {
+  final trajectory = _read(json.raw('trajectory'), TrajectoryId.parse);
+  final mission = _read(json.raw('mission'), MissionId.parse);
+  final operator = _read(json.raw('operator'), OperatorName.parse);
+  final reason = json.raw('reason');
   if (by != DecidedBy.person ||
       trajectory == null ||
       mission == null ||
       operator == null ||
       reason is! String ||
       reason.trim().isEmpty ||
-      json.length != 5) {
+      json.keys.length != 5) {
     return null;
   }
   return TrajectoryClosedByOperator(
@@ -205,10 +231,10 @@ TrajectoryClosedByOperator? _closedByOperator(
 
 /// The `translatedEvent` field read back; null when it isn't one
 /// [encodeTranslatedEvent] writes.
-AddressedEvent? _translatedEvent(Map<String, Object?> json) {
+AddressedEvent? _translatedEvent(JsonObject json) {
   try {
     return decodeTranslatedEvent(
-      JsonObject.parse(json['translatedEvent']) ??
+      JsonObject.parse(json.raw('translatedEvent')) ??
           (throw const FormatException('`translatedEvent` is not an object')),
     );
   } on FormatException {
@@ -222,7 +248,7 @@ DecidedBy? _decidedBy(String name) => DecidedBy.values.asNameMap()[name];
 EventAdmittedToMission? _admitted(
   ObjectId event,
   DecidedBy by,
-  Map<String, Object?> json,
+  JsonObject json,
 ) {
   final AdmissibleEvent translatedEvent;
   if (_translatedEvent(json) case final AdmissibleEvent admissible) {
@@ -233,16 +259,16 @@ EventAdmittedToMission? _admitted(
   final fields = {'event', 'by', 'translatedEvent'};
 
   final AdmittedPlacement placement;
-  if (json.containsKey('trajectory')) {
-    final trajectory = _read(json['trajectory'], TrajectoryId.parse);
+  if (json.has('trajectory')) {
+    final trajectory = _read(json.raw('trajectory'), TrajectoryId.parse);
     if (trajectory == null) return null;
     fields.add('trajectory');
     placement = OnTrajectory(trajectory);
   } else {
     final mission = _readMission(json, fields);
     if (mission == null) return null;
-    if (json.containsKey('startsTrajectory')) {
-      if (json['startsTrajectory'] != true) return null;
+    if (json.has('startsTrajectory')) {
+      if (json.raw('startsTrajectory') != true) return null;
       fields.add('startsTrajectory');
       placement = StartsTrajectory(mission);
     } else {
@@ -250,16 +276,16 @@ EventAdmittedToMission? _admitted(
     }
   }
   JsonObject? rules;
-  if (json.containsKey('rules')) {
-    rules = JsonObject.parse(json['rules']);
+  if (json.has('rules')) {
+    rules = JsonObject.parse(json.raw('rules'));
     if (rules == null) return null;
     fields.add('rules');
   }
   ReplyEndpoint? replyEndpoint;
-  if (json.containsKey('replyEndpoint')) {
+  if (json.has('replyEndpoint')) {
     try {
       replyEndpoint = decodeReplyEndpoint(
-        json['replyEndpoint'],
+        json.raw('replyEndpoint'),
         'replyEndpoint',
       );
     } on FormatException {
@@ -268,15 +294,15 @@ EventAdmittedToMission? _admitted(
     fields.add('replyEndpoint');
   }
   bool? startsTurn;
-  if (json.containsKey('startsTurn')) {
-    if (json['startsTurn'] case final bool value) {
+  if (json.has('startsTurn')) {
+    if (json.raw('startsTurn') case final bool value) {
       startsTurn = value;
     } else {
       return null;
     }
     fields.add('startsTurn');
   }
-  if (json.length != fields.length) return null;
+  if (json.keys.length != fields.length) return null;
   if ((rules != null) != EventAdmittedToMission.starts(placement)) return null;
   if ((startsTurn != null) != (translatedEvent is MessageSaid)) return null;
   if (placement is StartsTrajectory && startsTurn == false) return null;
@@ -294,17 +320,17 @@ EventAdmittedToMission? _admitted(
   return decision;
 }
 
-MissionPlacement? _readMission(Map<String, Object?> json, Set<String> fields) {
-  final inMission = json.containsKey('mission');
-  final starts = json.containsKey('startsMission');
+MissionPlacement? _readMission(JsonObject json, Set<String> fields) {
+  final inMission = json.has('mission');
+  final starts = json.has('startsMission');
   if (inMission == starts) return null;
   if (inMission) {
-    final mission = _read(json['mission'], MissionId.parse);
+    final mission = _read(json.raw('mission'), MissionId.parse);
     if (mission == null) return null;
     fields.add('mission');
     return InMission(mission);
   }
-  if (json['startsMission'] != true) return null;
+  if (json.raw('startsMission') != true) return null;
   fields.add('startsMission');
   return const StartsMission();
 }
@@ -312,26 +338,32 @@ MissionPlacement? _readMission(Map<String, Object?> json, Set<String> fields) {
 EventNotAdmittedToMission? _notAdmitted(
   ObjectId event,
   DecidedBy by,
-  Map<String, Object?> json,
+  JsonObject json,
 ) {
-  final why = json['why'];
-  if (why is! String) return null;
-  if (why == 'no-translator-for-source' || why == 'translator-found-nothing') {
-    if (json.length != 3) return null;
-    return why == 'no-translator-for-source'
+  final why = _read(json.raw('why'), _NotAdmittedWhy.parse);
+  if (why == null) return null;
+  // The two reasons with no address: the event never became one.
+  if (why
+      case _NotAdmittedWhy.noTranslatorForSource ||
+          _NotAdmittedWhy.translatorFoundNothing) {
+    if (json.keys.length != 3) return null;
+    return why == _NotAdmittedWhy.noTranslatorForSource
         ? NoTranslatorForSource(event, by: by)
         : TranslatorFoundNothing(event, by: by);
   }
   final addressInExternalSystem = _read(
-    json['addressInExternalSystem'],
+    json.raw('addressInExternalSystem'),
     AddressInExternalSystem.parse,
   );
-  final key = _read(json['key'], EventKey.parse);
+  final key = _read(json.raw('key'), EventKey.parse);
   if (addressInExternalSystem == null || key == null) return null;
   switch (why) {
-    case 'duplicate-event':
-      final of = _read(json['of'], ObjectId.parse);
-      if (of == null || json.length != 6) return null;
+    case _NotAdmittedWhy.noTranslatorForSource ||
+        _NotAdmittedWhy.translatorFoundNothing:
+      return null;
+    case _NotAdmittedWhy.duplicateEvent:
+      final of = _read(json.raw('of'), ObjectId.parse);
+      if (of == null || json.keys.length != 6) return null;
       return DuplicateEvent(
         event,
         by: by,
@@ -339,9 +371,9 @@ EventNotAdmittedToMission? _notAdmitted(
         key: key,
         of: of,
       );
-    case 'change-to-unadmitted-message':
-      final message = _read(json['message'], SourceMessageId.parse);
-      if (message == null || json.length != 6) return null;
+    case _NotAdmittedWhy.changeToUnadmittedMessage:
+      final message = _read(json.raw('message'), SourceMessageId.parse);
+      if (message == null || json.keys.length != 6) return null;
       return ChangeToUnadmittedMessage(
         event,
         by: by,
@@ -349,39 +381,38 @@ EventNotAdmittedToMission? _notAdmitted(
         key: key,
         message: message,
       );
-    case 'address-not-admitted-to-mission' ||
-        'said-starts-no-turn' ||
-        'judged-message-has-no-trajectory' ||
-        'close-asked-for-trajectory-not-open-at-address':
-      if (json.length != 5) return null;
-      return switch (why) {
-        'address-not-admitted-to-mission' => AddressNotAdmittedToMission(
-          event,
-          by: by,
-          addressInExternalSystem: addressInExternalSystem,
-          key: key,
-        ),
-        'said-starts-no-turn' => SaidStartsNoTurn(
-          event,
-          by: by,
-          addressInExternalSystem: addressInExternalSystem,
-          key: key,
-        ),
-        'judged-message-has-no-trajectory' => JudgedMessageHasNoTrajectory(
-          event,
-          by: by,
-          addressInExternalSystem: addressInExternalSystem,
-          key: key,
-        ),
-        _ => CloseAskedForTrajectoryNotOpenAtAddress(
-          event,
-          by: by,
-          addressInExternalSystem: addressInExternalSystem,
-          key: key,
-        ),
-      };
-    default:
-      return null;
+    case _NotAdmittedWhy.addressNotAdmittedToMission:
+      if (json.keys.length != 5) return null;
+      return AddressNotAdmittedToMission(
+        event,
+        by: by,
+        addressInExternalSystem: addressInExternalSystem,
+        key: key,
+      );
+    case _NotAdmittedWhy.saidStartsNoTurn:
+      if (json.keys.length != 5) return null;
+      return SaidStartsNoTurn(
+        event,
+        by: by,
+        addressInExternalSystem: addressInExternalSystem,
+        key: key,
+      );
+    case _NotAdmittedWhy.judgedMessageHasNoTrajectory:
+      if (json.keys.length != 5) return null;
+      return JudgedMessageHasNoTrajectory(
+        event,
+        by: by,
+        addressInExternalSystem: addressInExternalSystem,
+        key: key,
+      );
+    case _NotAdmittedWhy.closeAskedForTrajectoryNotOpenAtAddress:
+      if (json.keys.length != 5) return null;
+      return CloseAskedForTrajectoryNotOpenAtAddress(
+        event,
+        by: by,
+        addressInExternalSystem: addressInExternalSystem,
+        key: key,
+      );
   }
 }
 

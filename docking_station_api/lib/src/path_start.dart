@@ -13,8 +13,7 @@ library;
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:checked_json/checked_json.dart'
-    show decodeJsonRefusingDuplicateKeysAndUnsafeIntegers;
+import 'package:checked_json/checked_json.dart' show JsonObject;
 import 'package:is_content_id/is_content_id.dart' show ObjectId;
 import 'package:is_shapes/is_shapes.dart'
     show DecidedBy, MissionId, TrajectoryId;
@@ -23,6 +22,8 @@ import 'package:is_shapes/is_shapes.dart'
 // people said, which the airlock must never load.
 import 'package:is_conversation_vocabulary/reply_endpoint.dart'
     show ReplyEndpoint, decodeReplyEndpoint;
+
+import 'translated_event_case.dart';
 
 /// What an `event-admitted-to-mission` entry says about the trajectories it
 /// starts: [EntryStartsTrajectory], [EntryStartsNoTrajectory], or
@@ -91,34 +92,35 @@ AdmittedTrajectoryEntry<R> readTrajectoryStart<R>(
     Uint8List.sublistView(entry, 0, first),
     allowInvalid: true,
   );
+  // The entry's own header. Kind's package stays out of the airlock's imports.
+  // wire-ok: the logbook entry header, read before the body
   if (kind != 'event-admitted-to-mission') {
     return unreadable('kind `$kind`, not `event-admitted-to-mission`');
   }
 
-  final Object? decoded;
+  final JsonObject json;
   try {
-    decoded = decodeJsonRefusingDuplicateKeysAndUnsafeIntegers(
+    json = JsonObject.decode(
       utf8.decode(Uint8List.sublistView(entry, second + 1)),
     );
   } on FormatException catch (e) {
-    return unreadable('not JSON: ${e.message}');
+    return unreadable('not a JSON object: ${e.message}');
   }
-  if (decoded is! Map<String, Object?>) return unreadable('not an object');
-  final json = decoded;
   final fields = {'event', 'by', 'translatedEvent'};
 
-  final event = switch (json['event']) {
+  final event = switch (json.raw('event')) {
     final String hex => ObjectId.parse(hex),
     _ => null,
   };
   if (event == null) return unreadable('`event` is not an entry hash');
-  final by = switch (json['by']) {
+  final by = switch (json.raw('by')) {
     final String name => DecidedBy.values.asNameMap()[name],
     _ => null,
   };
   if (by == null) return unreadable('`by` is not who decided');
-  final eventCase = switch (json['translatedEvent']) {
-    {'case': final String eventCase} => eventCase,
+  final eventCase = switch (JsonObject.parse(json.raw('translatedEvent'))
+      ?.raw('case')) {
+    final String eventCase => eventCase,
     _ => null,
   };
   if (eventCase == null) {
@@ -131,33 +133,33 @@ AdmittedTrajectoryEntry<R> readTrajectoryStart<R>(
   MissionId? inMission;
   var startsMission = false;
   var startsTrajectory = false;
-  if (json.containsKey('trajectory')) {
-    onTrajectory = switch (json['trajectory']) {
+  if (json.has('trajectory')) {
+    onTrajectory = switch (json.raw('trajectory')) {
       final String hex => TrajectoryId.parse(hex),
       _ => null,
     };
     if (onTrajectory == null) return unreadable('`trajectory` is not an id');
     fields.add('trajectory');
   } else {
-    if (json.containsKey('mission') == json.containsKey('startsMission')) {
+    if (json.has('mission') == json.has('startsMission')) {
       return unreadable('not exactly one of `mission` and `startsMission`');
     }
-    if (json.containsKey('mission')) {
-      inMission = switch (json['mission']) {
+    if (json.has('mission')) {
+      inMission = switch (json.raw('mission')) {
         final String hex => MissionId.parse(hex),
         _ => null,
       };
       if (inMission == null) return unreadable('`mission` is not an id');
       fields.add('mission');
     } else {
-      if (json['startsMission'] != true) {
+      if (json.raw('startsMission') != true) {
         return unreadable('`startsMission` is not true');
       }
       startsMission = true;
       fields.add('startsMission');
     }
-    if (json.containsKey('startsTrajectory')) {
-      if (json['startsTrajectory'] != true) {
+    if (json.has('startsTrajectory')) {
+      if (json.raw('startsTrajectory') != true) {
         return unreadable('`startsTrajectory` is not true');
       }
       startsTrajectory = true;
@@ -168,8 +170,8 @@ AdmittedTrajectoryEntry<R> readTrajectoryStart<R>(
   // Rules exactly when it starts a mission or a trajectory, as
   // EventAdmittedToMission.
   final R? read;
-  if (json.containsKey('rules')) {
-    read = rules(json['rules']);
+  if (json.has('rules')) {
+    read = rules(json.raw('rules'));
     if (read == null) return unreadable('`rules` are not rules');
     fields.add('rules');
   } else {
@@ -182,13 +184,13 @@ AdmittedTrajectoryEntry<R> readTrajectoryStart<R>(
   // Where replies go: only beside rules, and read without decoding the
   // translated event it is copied from.
   ReplyEndpoint? replyEndpoint;
-  if (json.containsKey('replyEndpoint')) {
+  if (json.has('replyEndpoint')) {
     if (read == null) {
       return unreadable('`replyEndpoint` on an entry that starts nothing');
     }
     try {
       replyEndpoint = decodeReplyEndpoint(
-        json['replyEndpoint'],
+        json.raw('replyEndpoint'),
         'replyEndpoint',
       );
     } on FormatException catch (e) {
@@ -199,12 +201,15 @@ AdmittedTrajectoryEntry<R> readTrajectoryStart<R>(
 
   // Whether it starts a turn, exactly for something said, and never
   // false on a trajectory's start.
-  final said = eventCase == 'message-said';
-  if (json.containsKey('startsTurn') != said) {
+  // A case this version doesn't know is still no reason to stop: only its
+  // being something said changes what the entry must hold.
+  final said =
+      TranslatedEventCase.parse(eventCase) == TranslatedEventCase.messageSaid;
+  if (json.has('startsTurn') != said) {
     return unreadable('`startsTurn` not given exactly for something said');
   }
   if (said) {
-    final startsTurn = json['startsTurn'];
+    final startsTurn = json.raw('startsTurn');
     if (startsTurn is! bool) return unreadable('`startsTurn` is not a bool');
     if (startsTrajectory && !startsTurn) {
       return unreadable('a path started by something that starts no turn');
@@ -212,19 +217,21 @@ AdmittedTrajectoryEntry<R> readTrajectoryStart<R>(
     fields.add('startsTurn');
   }
 
-  if (json.length != fields.length) {
+  if (json.keys.length != fields.length) {
     return unreadable(
       'fields beyond ${fields.join(', ')}: '
       '${json.keys.where((k) => !fields.contains(k)).join(', ')}',
     );
   }
   if (!startsTrajectory) return EntryStartsNoTrajectory();
+  // Never null here: rules are given exactly when something starts.
+  if (read == null) return unreadable('a trajectory start with no `rules`');
   return EntryStartsTrajectory(
     event: event,
     by: by,
     trajectory: TrajectoryId.of(entry),
     mission: inMission ?? MissionId.of(entry),
-    rules: read as R,
+    rules: read,
     replyEndpoint: replyEndpoint,
   );
 }

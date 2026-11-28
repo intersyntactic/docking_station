@@ -23,6 +23,11 @@ Breaking in code only. The logbook's JSON is unchanged.
   `Quote`, `WhatChanged`).
 - `RelayedEventSource`, `encodeRelayedEvent`, `RelayedEvent` and the
   relayed entry's `{"at","bytes"}` are unchanged.
+- Loads the is_lint_rules analyzer plugin. Each decoder reads its entry
+  through a `JsonObject` instead of a map. A not-admitted decision's `why`
+  and a translated event's `case` are now enums, each parsed once, and every
+  switch on a sealed decision names each of its cases. The wire is unchanged.
+  `readTrajectoryStart` still accepts a `case` it doesn't know, as before.
 
 ## 0.8.0
 

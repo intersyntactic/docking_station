@@ -20,6 +20,7 @@ import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
 import 'package:is_shapes/is_shapes.dart' show ActorId, TrajectoryId;
 
 import 'translated_event.dart';
+import 'translated_event_case.dart';
 
 /// Every node shape a translated event can carry, by the field it travels in,
 /// as each node's package names them. A `shape` is one namespace across every
@@ -84,12 +85,13 @@ JsonObject encodeTranslatedEvent(AddressedEvent event) => JsonObject.of({
 });
 
 String _case(AddressedEvent event) => switch (event) {
-  MessageSaid() => 'message-said',
-  MessageChanged() => 'message-changed',
-  ActorsJoinedAddress() => 'actors-joined-address',
-  ShownMessageJudged() => 'shown-message-judged',
-  PersonAskedToCloseTrajectory() => 'person-asked-to-close-trajectory',
-};
+  MessageSaid() => TranslatedEventCase.messageSaid,
+  MessageChanged() => TranslatedEventCase.messageChanged,
+  ActorsJoinedAddress() => TranslatedEventCase.actorsJoinedAddress,
+  ShownMessageJudged() => TranslatedEventCase.shownMessageJudged,
+  PersonAskedToCloseTrajectory() =>
+    TranslatedEventCase.personAskedToCloseTrajectory,
+}.wire;
 
 /// [json] read back as the translated event [encodeTranslatedEvent] wrote. A
 /// [FormatException] for anything it doesn't write: an unknown case, a
@@ -113,8 +115,12 @@ AddressedEvent decodeTranslatedEvent(JsonObject json) {
   ActorId? from() =>
       json.has('from') ? _parse(json, 'from', ActorId.parse) : null;
 
-  final (event, fields) = switch (json.string('case')) {
-    'message-said' => (
+  final name = json.string('case');
+  final eventCase =
+      TranslatedEventCase.parse(name) ??
+      (throw FormatException('`case` is not a translated event: $name'));
+  final (event, fields) = switch (eventCase) {
+    TranslatedEventCase.messageSaid => (
       MessageSaid(
         addressInExternalSystem: addressInExternalSystem,
         containingAddress: containingAddress,
@@ -125,7 +131,7 @@ AddressedEvent decodeTranslatedEvent(JsonObject json) {
       ),
       const {'node'},
     ),
-    'message-changed' => (
+    TranslatedEventCase.messageChanged => (
       MessageChanged(
         addressInExternalSystem: addressInExternalSystem,
         containingAddress: containingAddress,
@@ -138,7 +144,7 @@ AddressedEvent decodeTranslatedEvent(JsonObject json) {
       ),
       const {'from', 'message', 'change'},
     ),
-    'actors-joined-address' => (
+    TranslatedEventCase.actorsJoinedAddress => (
       ActorsJoinedAddress.of(
             addressInExternalSystem: addressInExternalSystem,
             containingAddress: containingAddress,
@@ -155,7 +161,7 @@ AddressedEvent decodeTranslatedEvent(JsonObject json) {
           (throw JsonFieldException('joiners', 'a list of one or more')),
       const {'from', 'joiners'},
     ),
-    'shown-message-judged' => (
+    TranslatedEventCase.shownMessageJudged => (
       ShownMessageJudged(
         addressInExternalSystem: addressInExternalSystem,
         containingAddress: containingAddress,
@@ -168,7 +174,7 @@ AddressedEvent decodeTranslatedEvent(JsonObject json) {
       ),
       const {'from', 'to', 'verdict'},
     ),
-    'person-asked-to-close-trajectory' => (
+    TranslatedEventCase.personAskedToCloseTrajectory => (
       PersonAskedToCloseTrajectory(
         addressInExternalSystem: addressInExternalSystem,
         containingAddress: containingAddress,
@@ -180,9 +186,6 @@ AddressedEvent decodeTranslatedEvent(JsonObject json) {
         trajectory: _parse(json, 'trajectory', TrajectoryId.parse),
       ),
       const {'from', 'message', 'trajectory'},
-    ),
-    final other => throw FormatException(
-      '`case` is not a translated event: $other',
     ),
   };
   for (final field in json.keys) {
