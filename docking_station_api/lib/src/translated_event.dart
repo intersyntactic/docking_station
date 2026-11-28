@@ -18,7 +18,12 @@ import 'package:checked_json/checked_json.dart'
     show decodeJsonRefusingDuplicateKeysAndUnsafeIntegers;
 import 'package:is_content_id/is_content_id.dart' show ObjectId;
 import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
-    show ReplyEndpoint, SourceMessageId, UserSaid, WhatChanged;
+    show
+        ConversationKind,
+        ReplyEndpoint,
+        SourceMessageId,
+        UserSaid,
+        WhatChanged;
 import 'package:is_logbook_format/is_logbook_format.dart' show Kind;
 import 'package:is_shapes/is_shapes.dart' show ActorId, TrajectoryId;
 
@@ -254,10 +259,16 @@ final class MessageSaid extends AdmissibleEvent {
     required super.replyEndpoint,
     required super.key,
     required this.node,
+    required this.conversationKind,
   });
 
   /// What was said.
   final UserSaid node;
+
+  /// What kind of conversation it was said in, as the module that
+  /// translated it can tell: an agent answers only where its owner can see,
+  /// so the place is always stated, [ConversationKind.notKnown] included.
+  final ConversationKind conversationKind;
 
   @override
   ActorId get from => node.author;

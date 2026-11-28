@@ -106,6 +106,7 @@ void main() {
           replyEndpoint: endpoint,
           key: said.key,
           node: said.node,
+          conversationKind: said.conversationKind,
         ),
         placement: const StartsTrajectory(StartsMission()),
         rules: rules,
@@ -115,11 +116,12 @@ void main() {
   RepliesWithPinnedBodyFields pinned(
     String origin,
     String path,
-    Map<String, String> fields,
-  ) => RepliesWithPinnedBodyFields.at(
+    Map<String, String> fields, {
+    Set<String> mustBeAbsent = const {},
+  }) => RepliesWithPinnedBodyFields.at(
     origin: Origin.parse(origin)!,
     path: WebPath.parse(path)!,
-    pinned: PinnedBodyFields.of(fields)!,
+    pinned: PinnedBodyFields.of(fields, mustBeAbsent: mustBeAbsent)!,
   )!;
 
   test('reads an endpoint with pinned body fields as decodeDecision does', () {
@@ -150,46 +152,61 @@ void main() {
   test('a decision recorded with a Slack endpoint as 0.9 wrote it still '
       'reads, in both readers, as its pinned fields', () {
     // The endpoint exactly as is_conversation_vocabulary 0.1 wrote it, in
-    // both places an admission carries it. The service replays its own
-    // decisions at start and stops on one it can't read.
-    const asFirstWritten = {
-      'case': 'in-slack-conversation',
-      'origin': 'https://slack.com',
-      'channel': 'C0123ABCD',
-      'thread': '1700000000.000100',
+    // both places an admission carries it, threaded and not. The service
+    // replays its own decisions at start and stops on one it can't read.
+    final cases = <Map<String, Object?>, RepliesWithPinnedBodyFields>{
+      {
+        'case': 'in-slack-conversation',
+        'origin': 'https://slack.com',
+        'channel': 'C0123ABCD',
+        'thread': '1700000000.000100',
+      }: pinned('https://slack.com', '/api/chat.postMessage', {
+        'channel': 'C0123ABCD',
+        'thread_ts': '1700000000.000100',
+      }),
+      // Sent at the conversation's top level, so a reply may not pick a
+      // thread.
+      {
+        'case': 'in-slack-conversation',
+        'origin': 'https://slack.com',
+        'channel': 'D0123ABCD',
+      }: pinned(
+        'https://slack.com',
+        '/api/chat.postMessage',
+        {'channel': 'D0123ABCD'},
+        mustBeAbsent: {'thread_ts'},
+      ),
     };
     final written = startsWith(
       pinned('https://slack.com', '/api/chat.postMessage', {'channel': 'x'}),
     );
-    final json = jsonDecode(utf8.decode(encodeDecision(written).$2));
-    if (json case {
-      'translatedEvent': final Map<String, Object?> translatedEvent,
-    }) {
-      translatedEvent['replyEndpoint'] = asFirstWritten;
+    for (final MapEntry(key: asFirstWritten, value: meant) in cases.entries) {
+      final json = jsonDecode(utf8.decode(encodeDecision(written).$2));
+      if (json case {
+        'translatedEvent': final Map<String, Object?> translatedEvent,
+      }) {
+        translatedEvent['replyEndpoint'] = asFirstWritten;
+      }
+      if (json case final Map<String, Object?> top) {
+        top['replyEndpoint'] = asFirstWritten;
+      }
+      final body = Uint8List.fromList(utf8.encode(jsonEncode(json)));
+      final full = decodeDecision(
+        DecisionEntryKind.eventAdmittedToMission,
+        body,
+      ) as EventAdmittedToMission?;
+      expect(full?.replyEndpoint, meant);
+      final entry = Uint8List.fromList([
+        ...utf8.encode('${DecisionEntryKind.eventAdmittedToMission}\n-\n'),
+        ...body,
+      ]);
+      expect((_read(entry) as EntryStartsTrajectory).replyEndpoint, meant);
+      // Written back, it takes the new form.
+      expect(
+        encodeReplyEndpoint(full!.replyEndpoint!).raw('case'),
+        'with-pinned-body-fields',
+      );
     }
-    if (json case final Map<String, Object?> top) {
-      top['replyEndpoint'] = asFirstWritten;
-    }
-    final body = Uint8List.fromList(utf8.encode(jsonEncode(json)));
-    final meant = pinned('https://slack.com', '/api/chat.postMessage', {
-      'channel': 'C0123ABCD',
-      'thread_ts': '1700000000.000100',
-    });
-    final full = decodeDecision(
-      DecisionEntryKind.eventAdmittedToMission,
-      body,
-    ) as EventAdmittedToMission?;
-    expect(full?.replyEndpoint, meant);
-    final entry = Uint8List.fromList([
-      ...utf8.encode('${DecisionEntryKind.eventAdmittedToMission}\n-\n'),
-      ...body,
-    ]);
-    expect((_read(entry) as EntryStartsTrajectory).replyEndpoint, meant);
-    // Written back, it takes the new form.
-    expect(
-      encodeReplyEndpoint(full!.replyEndpoint!).raw('case'),
-      'with-pinned-body-fields',
-    );
   });
 
   test('a trajectory is named by the whole entry, header included', () {

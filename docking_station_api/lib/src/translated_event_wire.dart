@@ -12,6 +12,7 @@ import 'package:is_annotation_shapes/is_annotation_shapes.dart'
     show VerdictOnShownMessage;
 import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
     show
+        ConversationKind,
         SourceMessageId,
         UserSaid,
         WhatChanged,
@@ -56,7 +57,10 @@ JsonObject encodeTranslatedEvent(AddressedEvent event) => JsonObject.of({
     'replyEndpoint': encodeReplyEndpoint(endpoint),
   'key': event.key.value,
   ...switch (event) {
-    MessageSaid(:final node) => {'node': node.toJson()},
+    MessageSaid(:final node, :final conversationKind) => {
+      'node': node.toJson(),
+      'conversationKind': conversationKind.wire,
+    },
     MessageChanged(:final from, :final message, :final change) => {
       'from': ?from?.value,
       'message': message.value,
@@ -128,8 +132,9 @@ AddressedEvent decodeTranslatedEvent(JsonObject json) {
         replyEndpoint: replyEndpoint,
         key: key,
         node: UserSaid.fromJson(json.object('node')),
+        conversationKind: _conversationKind(json),
       ),
-      const {'node'},
+      const {'node', 'conversationKind'},
     ),
     TranslatedEventCase.messageChanged => (
       MessageChanged(
@@ -213,3 +218,13 @@ T _parse<T extends Object>(
 ) =>
     parse(json.string(field)) ??
     (throw JsonFieldException(field, 'a well-formed ${T.toString()}'));
+
+/// The `conversationKind` of something said. An entry written before the
+/// field existed has none, and reads as [ConversationKind.notKnown]: the
+/// module never said, and such an entry is only ever history, never decided
+/// again. Every entry written now carries it.
+ConversationKind _conversationKind(JsonObject json) {
+  if (!json.has('conversationKind')) return ConversationKind.notKnown;
+  return ConversationKind.parse(json.string('conversationKind')) ??
+      (throw JsonFieldException('conversationKind', 'a conversation kind'));
+}
