@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:checked_json/checked_json.dart' show JsonObject;
-import 'package:is_conversation_shapes/is_conversation_shapes.dart'
+import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
     show SourceMessageId, UserSaid;
 import 'package:docking_station_service/docking_station_service.dart';
 import 'package:is_docking_station_api/is_docking_station_api.dart';
