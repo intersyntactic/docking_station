@@ -9,15 +9,23 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 /// The packages path_start.dart may reach: this one, the three it names,
-/// and what they import. checked_json is trusted: it reads fields of a
-/// value already decoded as JSON, and decodes nothing a stranger shaped.
+/// and what they import. checked_json is trusted: it decodes JSON text and
+/// reads fields, and decodes no shape a stranger defined.
 const _allowed = {
   'checked_json',
   'is_docking_station_api',
   'is_shapes',
   'is_content_id',
-  'is_conversation_reply_vocabulary',
+  'is_conversation_vocabulary',
   'is_web_address_vocabulary',
+};
+
+/// is_conversation_vocabulary also holds what people said, decoded from
+/// what strangers sent; path_start.dart may reach only its reply endpoint.
+const _allowedConversationVocabularyFiles = {
+  'reply_endpoint.dart',
+  'conversation_kind.dart',
+  'strict_object_reader.dart',
 };
 
 final _directive = RegExp(
@@ -78,5 +86,14 @@ void main() {
         .map((f) => f.pathSegments.last)
         .toSet();
     expect(own, {'path_start.dart'}, reason: '$own');
+    final conversation = seen
+        .where((f) => packageOf(f) == 'is_conversation_vocabulary')
+        .map((f) => f.pathSegments.last)
+        .toSet();
+    expect(
+      conversation.difference(_allowedConversationVocabularyFiles),
+      isEmpty,
+      reason: '$conversation',
+    );
   });
 }

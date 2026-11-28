@@ -5,17 +5,19 @@ library;
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:checked_json/checked_json.dart' show JsonObject;
-import 'package:is_conversation_shapes/is_conversation_shapes.dart'
-    show SourceMessageId;
+import 'package:checked_json/checked_json.dart'
+    show JsonObject, decodeJsonRefusingDuplicateKeysAndUnsafeIntegers;
+import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
+    show
+        ReplyEndpoint,
+        SourceMessageId,
+        decodeReplyEndpoint,
+        encodeReplyEndpoint;
 import 'package:is_logbook_format/is_logbook_format.dart' show Kind, ObjectId;
 import 'package:is_shapes/is_shapes.dart'
     show DecidedBy, MissionId, TrajectoryId;
 
 import 'decision.dart';
-
-import 'package:is_conversation_reply_vocabulary/is_conversation_reply_vocabulary.dart'
-    show ReplyEndpoint, decodeReplyEndpoint, encodeReplyEndpoint;
 
 import 'translated_event.dart';
 import 'translated_event_wire.dart';
@@ -122,7 +124,7 @@ String _why(EventNotAdmittedToMission declined) => switch (declined) {
 AdmissionDecision? decodeDecision(Kind kind, Uint8List body) {
   final Object? json;
   try {
-    json = jsonDecode(utf8.decode(body));
+    json = decodeJsonRefusingDuplicateKeysAndUnsafeIntegers(utf8.decode(body));
   } on FormatException {
     return null;
   }

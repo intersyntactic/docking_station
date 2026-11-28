@@ -10,12 +10,14 @@ library;
 import 'package:checked_json/checked_json.dart';
 import 'package:is_annotation_shapes/is_annotation_shapes.dart'
     show VerdictOnShownMessage;
-import 'package:is_conversation_shapes/is_conversation_shapes.dart'
-    show SourceMessageId, UserSaid, WhatChanged;
+import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
+    show
+        SourceMessageId,
+        UserSaid,
+        WhatChanged,
+        decodeReplyEndpoint,
+        encodeReplyEndpoint;
 import 'package:is_shapes/is_shapes.dart' show ActorId, TrajectoryId;
-
-import 'package:is_conversation_reply_vocabulary/is_conversation_reply_vocabulary.dart'
-    show decodeReplyEndpoint, encodeReplyEndpoint;
 
 import 'translated_event.dart';
 

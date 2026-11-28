@@ -2,6 +2,28 @@ Each version is tagged `docking_station_api-vX.Y.Z` on the commit it is
 published from. Versions up to 0.3.0 were published as
 `is_admission_vocabulary` and tagged `admission_vocabulary-vX.Y.Z`.
 
+## 0.9.0
+
+Breaking in code only. The logbook's JSON is unchanged.
+
+- Depends on is_conversation_vocabulary ^0.1.1 in place of both
+  is_conversation_shapes and is_conversation_reply_vocabulary, which it
+  merges. `UserSaid`, `WhatChanged`, `SourceMessageId` and `ReplyEndpoint`
+  now come from it, as different Dart types from the old packages' ones, so
+  a program that builds a `TranslatedEvent` moves to is_conversation_vocabulary
+  in the same change.
+- On checked_json ^0.3.0. Every entry is decoded refusing an object that
+  names a field twice, where `jsonDecode` kept the last value without a
+  word. Such an entry now reads as one this package does not write.
+- On is_annotation_shapes ^0.4.0, its release on checked_json ^0.3.0.
+  `VerdictOnShownMessage` is unchanged.
+- `path_start.dart`, which the airlock imports, takes `ReplyEndpoint` from
+  is_conversation_vocabulary's `reply_endpoint.dart` alone, and a test holds
+  that it reaches none of that package's stranger-facing files (`UserSaid`,
+  `Quote`, `WhatChanged`).
+- `RelayedEventSource`, `encodeRelayedEvent`, `RelayedEvent` and the
+  relayed entry's `{"at","bytes"}` are unchanged.
+
 ## 0.8.0
 
 Breaking in code only. The logbook's JSON is unchanged.

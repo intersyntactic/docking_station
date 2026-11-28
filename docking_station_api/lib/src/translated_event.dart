@@ -14,14 +14,13 @@ import 'dart:typed_data';
 
 import 'package:is_annotation_shapes/is_annotation_shapes.dart'
     show VerdictOnShownMessage;
-import 'package:is_conversation_shapes/is_conversation_shapes.dart'
-    show SourceMessageId, UserSaid, WhatChanged;
+import 'package:checked_json/checked_json.dart'
+    show decodeJsonRefusingDuplicateKeysAndUnsafeIntegers;
 import 'package:is_content_id/is_content_id.dart' show ObjectId;
+import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
+    show ReplyEndpoint, SourceMessageId, UserSaid, WhatChanged;
 import 'package:is_logbook_format/is_logbook_format.dart' show Kind;
 import 'package:is_shapes/is_shapes.dart' show ActorId, TrajectoryId;
-
-import 'package:is_conversation_reply_vocabulary/is_conversation_reply_vocabulary.dart'
-    show ReplyEndpoint;
 
 /// Where relayed events come from, such as `teams`: a lowercase letter, then
 /// lowercase letters, digits and `-`, as an address in an external system
@@ -103,7 +102,9 @@ final class RelayedEvent {
     if (source == null) return null;
     final Object? json;
     try {
-      json = jsonDecode(utf8.decode(body));
+      json = decodeJsonRefusingDuplicateKeysAndUnsafeIntegers(
+        utf8.decode(body),
+      );
     } on FormatException {
       return null;
     }
