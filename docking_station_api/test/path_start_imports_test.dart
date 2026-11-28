@@ -28,9 +28,14 @@ const _allowedConversationVocabularyFiles = {
   'strict_object_reader.dart',
 };
 
-/// The files of this package path_start.dart may reach: itself, and the
-/// translated event's case names, which import nothing.
-const _allowedOwnFiles = {'path_start.dart', 'translated_event_case.dart'};
+/// The files of this package path_start.dart may reach: itself, the
+/// translated event's case names, which import nothing, and the decision
+/// format, which imports only checked_json.
+const _allowedOwnFiles = {
+  'path_start.dart',
+  'translated_event_case.dart',
+  'decision_format.dart',
+};
 
 final _directive = RegExp(
   r'''^\s*(?:import|export|part)\s+['"]([^'"]+)['"]''',

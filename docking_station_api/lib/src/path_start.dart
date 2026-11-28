@@ -23,6 +23,7 @@ import 'package:is_shapes/is_shapes.dart'
 import 'package:is_conversation_vocabulary/reply_endpoint.dart'
     show ReplyEndpoint, decodeReplyEndpoint;
 
+import 'decision_format.dart';
 import 'translated_event_case.dart';
 
 /// What an `event-admitted-to-mission` entry says about the trajectories it
@@ -98,13 +99,20 @@ AdmittedTrajectoryEntry<R> readTrajectoryStart<R>(
     return unreadable('kind `$kind`, not `event-admitted-to-mission`');
   }
 
-  final JsonObject json;
+  final JsonObject written;
   try {
-    json = JsonObject.decode(
+    written = JsonObject.decode(
       utf8.decode(Uint8List.sublistView(entry, second + 1)),
     );
   } on FormatException catch (e) {
     return unreadable('not a JSON object: ${e.message}');
+  }
+  final json = withoutKnownDecisionFormat(written);
+  if (json == null) {
+    return unreadable(
+      '`$decisionFormatField` is a format this does not read: '
+      '${written.raw(decisionFormatField)}',
+    );
   }
   final fields = {'event', 'by', 'translatedEvent'};
 

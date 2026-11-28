@@ -49,6 +49,7 @@ final said = MessageSaid(
   key: key,
   node: UserSaid(author: from, source: message, text: 'hi'),
   conversationKind: ConversationKind.groupChat,
+  forTheAgent: WhetherForTheAgent.mentionsTheAgent,
 );
 
 /// One translated event of each case, each read back as itself.
@@ -135,6 +136,7 @@ void main() {
       key: key,
       node: said.node,
       conversationKind: kind,
+      forTheAgent: said.forTheAgent,
     );
 
     test('every kind reads back as itself', () {
@@ -166,6 +168,52 @@ void main() {
     });
   });
 
+  group('whether something said is for the agent', () {
+    MessageSaid saidWith(WhetherForTheAgent forTheAgent) => MessageSaid(
+      addressInExternalSystem: addressInExternalSystem,
+      containingAddress: containingAddress,
+      addressedTo: bot,
+      replyEndpoint: replyEndpoint,
+      key: key,
+      node: said.node,
+      conversationKind: said.conversationKind,
+      forTheAgent: forTheAgent,
+    );
+
+    test('every value reads back as itself, and has its own wire name', () {
+      expect({
+        for (final value in WhetherForTheAgent.values) value.wire,
+      }, hasLength(WhetherForTheAgent.values.length));
+      for (final forTheAgent in WhetherForTheAgent.values) {
+        final read = decodeTranslatedEvent(
+          JsonObject.decode(
+            jsonEncode(encodeTranslatedEvent(saidWith(forTheAgent))),
+          ),
+        );
+        expect((read as MessageSaid).forTheAgent, forTheAgent);
+      }
+    });
+
+    test('an entry written before the field existed reads as not known', () {
+      final json = JsonObject.decode(jsonEncode(encodeTranslatedEvent(said)))
+          .without(const {'forTheAgent'});
+      final read = decodeTranslatedEvent(json) as MessageSaid;
+      expect(read.forTheAgent, WhetherForTheAgent.notKnown);
+    });
+
+    test('a value it does not know is refused, not read as not known', () {
+      for (final wrong in <Object?>['mentioned', '', true, null]) {
+        final json = JsonObject.decode(jsonEncode(encodeTranslatedEvent(said)))
+            .withFields({'forTheAgent': wrong});
+        expect(
+          () => decodeTranslatedEvent(json),
+          throwsA(isA<FormatException>()),
+          reason: '$wrong',
+        );
+      }
+    });
+  });
+
   test('an admission that starts a mission and its first trajectory', () {
     final entry = encodeDecision(
       _admitted(const StartsTrajectory(StartsMission()), DecidedBy.rules),
@@ -173,13 +221,14 @@ void main() {
     expect(entry.$1, DecisionEntryKind.eventAdmittedToMission);
     expect(
       _text(entry),
-      '{"event":"$_a","by":"rules","translatedEvent":{"case":"message-said",'
+      '{"decisionFormat":1,'
+      '"event":"$_a","by":"rules","translatedEvent":{"case":"message-said",'
       '"addressInExternalSystem":"teams:19:x;messageid=1",'
       '"containingAddress":"teams:19:x","addressedTo":"teams:t/bot:app",'
       '$_replyEndpointField,'
       '"key":"message:1","node":{"shape":"UserSaid","author":"teams:t/p",'
       '"source":"19:x;messageid=1|1","text":"hi"},'
-      '"conversationKind":"group-chat"},'
+      '"conversationKind":"group-chat","forTheAgent":"mentions-the-agent"},'
       '"startsTrajectory":true,"startsMission":true,'
       '"rules":{"tools":"all"},$_replyEndpointField,"startsTurn":true}',
     );
@@ -313,7 +362,7 @@ void main() {
     expect(entry.$1, DecisionEntryKind.eventNotAdmittedToMission);
     expect(
       _text(entry),
-      '{"event":"$_a","by":"rules","why":"duplicate-event",'
+      '{"decisionFormat":1,"event":"$_a","by":"rules","why":"duplicate-event",'
       '"addressInExternalSystem":"teams:19:x;messageid=1","key":"message:1",'
       '"of":"$_b"}',
     );
@@ -331,7 +380,7 @@ void main() {
     expect(entry.$1, DecisionEntryKind.trajectoryClosed);
     expect(
       _text(entry),
-      '{"by":"person","trajectory":"$_c","mission":"$_b",'
+      '{"decisionFormat":1,"by":"person","trajectory":"$_c","mission":"$_b",'
       '"operator":"nick","reason":"clearing test trajectories"}',
     );
     expect(

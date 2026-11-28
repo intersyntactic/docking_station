@@ -16,3 +16,4 @@ export 'src/decision.dart';
 export 'src/decision_wire.dart';
 export 'src/translated_event.dart';
 export 'src/translated_event_wire.dart';
+export 'src/whether_for_the_agent.dart';
