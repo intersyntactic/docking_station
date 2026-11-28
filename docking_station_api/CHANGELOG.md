@@ -2,6 +2,36 @@ Each version is tagged `docking_station_api-vX.Y.Z` on the commit it is
 published from. Versions up to 0.3.0 were published as
 `is_admission_vocabulary` and tagged `admission_vocabulary-vX.Y.Z`.
 
+## 0.10.0
+
+Breaking. Every entry already in a logbook still reads.
+
+- `MessageSaid` takes a required `conversationKind`, a `ConversationKind`
+  from is_conversation_vocabulary: one-to-one, group chat, public channel,
+  private channel, or not known. An agent answers only where its owner can
+  see, so every translator states the place, and "not known" is a case,
+  never a silent default. On the wire it is `"conversationKind"` inside a
+  `message-said` translated event. An entry written before the field
+  existed has none, and reads as not known (Nick, 28 Nov). Such an entry
+  is only ever history, never decided again. A kind it doesn't know is
+  refused.
+
+- On is_conversation_vocabulary ^0.2.0. A reply endpoint is now one of two
+  general cases, named for how a reply is kept to its conversation:
+  `RepliesUnderWebAddress` (by where it is sent) or
+  `RepliesWithPinnedBodyFields` (by fields its body must equal, may not
+  carry, or alone may carry). The Slack-specific `RepliesInSlackConversation`
+  is gone. A decision recorded with the old `in-slack-conversation` endpoint
+  still reads, as the pinned fields it meant: a threaded one pins its
+  `thread_ts`, and an unthreaded one requires `thread_ts` to be absent. A
+  test holds that for both readers.
+- On checked_json ^0.4.0, where a `JsonObject` can't be changed at any depth
+  and `JsonObject.of` copies its map, so it is never `const`.
+- On is_annotation_shapes ^0.5.0, its release on checked_json ^0.4.0.
+- A test holds `readTrajectoryStart` and `decodeDecision` to the same
+  pinned-fields endpoint. `path_start.dart` reaches the vocabulary's
+  renamed `reply_endpoint_case.dart`, allowed by name.
+
 ## 0.9.0
 
 Breaking in code only. The logbook's JSON is unchanged.

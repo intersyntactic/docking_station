@@ -9,6 +9,7 @@ import 'package:is_annotation_shapes/is_annotation_shapes.dart'
     show ProposedCorrectionVerdict;
 import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
     show
+        ConversationKind,
         Deleted,
         Edited,
         RepliesUnderWebAddress,
@@ -47,6 +48,7 @@ final said = MessageSaid(
   replyEndpoint: replyEndpoint,
   key: key,
   node: UserSaid(author: from, source: message, text: 'hi'),
+  conversationKind: ConversationKind.groupChat,
 );
 
 /// One translated event of each case, each read back as itself.
@@ -104,7 +106,7 @@ final closeAsked = PersonAskedToCloseTrajectory(
   trajectory: TrajectoryId.parse(_c)!,
 );
 
-const rules = JsonObject.of({'tools': 'all'});
+final rules = JsonObject.of({'tools': 'all'});
 
 EventAdmittedToMission _admitted(AdmittedPlacement placement, DecidedBy by) =>
     EventAdmittedToMission(
@@ -124,6 +126,46 @@ const _replyEndpointField =
     '"pathPrefix":"/amer/v3/conversations/19:x/activities/"}}';
 
 void main() {
+  group('the kind of conversation something said was in', () {
+    MessageSaid saidIn(ConversationKind kind) => MessageSaid(
+      addressInExternalSystem: addressInExternalSystem,
+      containingAddress: containingAddress,
+      addressedTo: bot,
+      replyEndpoint: replyEndpoint,
+      key: key,
+      node: said.node,
+      conversationKind: kind,
+    );
+
+    test('every kind reads back as itself', () {
+      for (final kind in ConversationKind.values) {
+        final read = decodeTranslatedEvent(
+          JsonObject.decode(jsonEncode(encodeTranslatedEvent(saidIn(kind)))),
+        );
+        expect((read as MessageSaid).conversationKind, kind);
+      }
+    });
+
+    test('an entry written before the field existed reads as not known', () {
+      final json = JsonObject.decode(jsonEncode(encodeTranslatedEvent(said)))
+          .without(const {'conversationKind'});
+      final read = decodeTranslatedEvent(json) as MessageSaid;
+      expect(read.conversationKind, ConversationKind.notKnown);
+    });
+
+    test('a kind it does not know is refused, not read as not known', () {
+      for (final wrong in <Object?>['channel', '', 1, null]) {
+        final json = JsonObject.decode(jsonEncode(encodeTranslatedEvent(said)))
+            .withFields({'conversationKind': wrong});
+        expect(
+          () => decodeTranslatedEvent(json),
+          throwsA(isA<FormatException>()),
+          reason: '$wrong',
+        );
+      }
+    });
+  });
+
   test('an admission that starts a mission and its first trajectory', () {
     final entry = encodeDecision(
       _admitted(const StartsTrajectory(StartsMission()), DecidedBy.rules),
@@ -136,7 +178,8 @@ void main() {
       '"containingAddress":"teams:19:x","addressedTo":"teams:t/bot:app",'
       '$_replyEndpointField,'
       '"key":"message:1","node":{"shape":"UserSaid","author":"teams:t/p",'
-      '"source":"19:x;messageid=1|1","text":"hi"}},'
+      '"source":"19:x;messageid=1|1","text":"hi"},'
+      '"conversationKind":"group-chat"},'
       '"startsTrajectory":true,"startsMission":true,'
       '"rules":{"tools":"all"},$_replyEndpointField,"startsTurn":true}',
     );
