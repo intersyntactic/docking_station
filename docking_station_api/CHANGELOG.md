@@ -2,6 +2,21 @@ Each version is tagged `docking_station_api-vX.Y.Z` on the commit it is
 published from. Versions up to 0.3.0 were published as
 `is_admission_vocabulary` and tagged `admission_vocabulary-vX.Y.Z`.
 
+## 0.10.0
+
+Breaking in code only. The logbook's JSON is unchanged.
+
+- On is_conversation_vocabulary ^0.2.0, which adds `RepliesInWhatsAppChat`, a
+  `ReplyEndpoint` case for the WhatsApp Cloud API, and on checked_json
+  ^0.4.0, where a `JsonObject` can't be changed at any depth and
+  `JsonObject.of` copies its map, so it is never `const`.
+- On is_annotation_shapes ^0.5.0, its release on checked_json ^0.4.0.
+- `path_start.dart` now reaches the vocabulary's `whatsapp_chat.dart`, which
+  holds a WhatsApp endpoint's chat and ids and decodes nothing anyone said.
+  The import test allows it by name. A test holds that `readTrajectoryStart`
+  and `decodeDecision` read a WhatsApp endpoint the same, for a person and
+  for a group.
+
 ## 0.9.0
 
 Breaking in code only. The logbook's JSON is unchanged.

@@ -24,6 +24,8 @@ const _allowed = {
 /// what strangers sent; path_start.dart may reach only its reply endpoint.
 const _allowedConversationVocabularyFiles = {
   'reply_endpoint.dart',
+  // A WhatsApp endpoint's chat and ids: addresses, not what anyone said.
+  'whatsapp_chat.dart',
   'conversation_kind.dart',
   'strict_object_reader.dart',
 };

@@ -104,7 +104,7 @@ final closeAsked = PersonAskedToCloseTrajectory(
   trajectory: TrajectoryId.parse(_c)!,
 );
 
-const rules = JsonObject.of({'tools': 'all'});
+final rules = JsonObject.of({'tools': 'all'});
 
 EventAdmittedToMission _admitted(AdmittedPlacement placement, DecidedBy by) =>
     EventAdmittedToMission(

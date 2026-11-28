@@ -7,10 +7,21 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:checked_json/checked_json.dart' show JsonObject;
+import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
+    show
+        GraphApiVersion,
+        RepliesInWhatsAppChat,
+        WhatsAppBusinessPhoneNumberId,
+        WhatsAppGroupChat,
+        WhatsAppGroupId,
+        WhatsAppIndividualChat,
+        WhatsAppUserPhoneNumber;
 import 'package:is_docking_station_api/is_docking_station_api.dart';
 import 'package:is_docking_station_api/path_start.dart';
 import 'package:is_shapes/is_shapes.dart'
     show DecidedBy, MissionId, TrajectoryId;
+import 'package:is_web_address_vocabulary/is_web_address_vocabulary.dart'
+    show Origin;
 import 'package:test/test.dart';
 
 import 'decision_wire_test.dart' show event, translatedEvents, rules, said;
@@ -84,6 +95,45 @@ void main() {
             reason: '$full',
           );
       }
+    }
+  });
+
+  test('reads a WhatsApp reply endpoint as decodeDecision does, for a '
+      'person and a group', () {
+    for (final chat in [
+      WhatsAppIndividualChat(WhatsAppUserPhoneNumber.parse('61400000000')!),
+      WhatsAppGroupChat(WhatsAppGroupId.parse('HBgLMTY1MDM4Nzk0MzkVAgAS')!),
+    ]) {
+      final endpoint = RepliesInWhatsAppChat(
+        origin: Origin.parse('https://graph.facebook.com')!,
+        graphApiVersion: GraphApiVersion.parse('v27.0')!,
+        phoneNumberId: WhatsAppBusinessPhoneNumberId.parse('106540352242922')!,
+        chat: chat,
+      );
+      final decision = EventAdmittedToMission(
+        event,
+        by: DecidedBy.rules,
+        translatedEvent: MessageSaid(
+          addressInExternalSystem: said.addressInExternalSystem,
+          containingAddress: said.containingAddress,
+          addressedTo: said.addressedTo,
+          replyEndpoint: endpoint,
+          key: said.key,
+          node: said.node,
+        ),
+        placement: const StartsTrajectory(StartsMission()),
+        rules: rules,
+        startsTurn: true,
+      );
+      final full =
+          decodeDecision(
+                DecisionEntryKind.eventAdmittedToMission,
+                encodeDecision(decision).$2,
+              )!
+              as EventAdmittedToMission;
+      final narrow = _read(_entry(decision)) as EntryStartsTrajectory;
+      expect(full.replyEndpoint, endpoint);
+      expect(narrow.replyEndpoint, endpoint);
     }
   });
 
