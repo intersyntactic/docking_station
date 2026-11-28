@@ -185,15 +185,27 @@ Future<void> runDockingStation({
 
 /// One module's translator, with the state it returned last, which it is
 /// given with each event.
+///
+/// The state from an event translated to an address and key already seen
+/// is discarded: that event is a redelivery, and stepping a translator's
+/// state back to it would undo what came between, such as an edit.
 final class _TranslatorWithState<S> {
   _TranslatorWithState(this._translator) : _state = _translator.start;
 
   final TranslatesRelayedEvents<S> _translator;
   S _state;
+  final _seen = <(AddressInExternalSystem, EventKey)>{};
 
   TranslatedEvent step(RelayedEvent event) {
     final (state, translated) = _translator.step(_state, event);
-    _state = state;
+    final firstTime = switch (translated) {
+      AddressedEvent(:final addressInExternalSystem, :final key) => _seen.add((
+        addressInExternalSystem,
+        key,
+      )),
+      NothingToAdmit() => true,
+    };
+    if (firstTime) _state = state;
     return translated;
   }
 }
