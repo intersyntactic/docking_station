@@ -185,6 +185,7 @@ final class _Translator implements TranslatesRelayedEvents<int> {
           addressedTo: null,
           replyEndpoint: null,
           conversationKind: ConversationKind.notKnown,
+          forTheAgent: WhetherForTheAgent.everyMessageHereIsForTheAgent,
           key: EventKey.parse(key)!,
           node: UserSaid(
             author: ann,
@@ -195,6 +196,53 @@ final class _Translator implements TranslatesRelayedEvents<int> {
       );
     }
     return (state + 1, const NothingToAdmit());
+  }
+}
+
+/// Keeps the latest text of each message, from events
+/// `{"message": <id>, "text": <text>, "key": <key>}`, each said by [ann] in
+/// [chat]; anything else is nothing to admit. Keeps each state it was given,
+/// in order.
+final class _LatestTextPerMessage
+    implements TranslatesRelayedEvents<Map<String, String>> {
+  final given = <Map<String, String>>[];
+
+  @override
+  RelayedEventSource get source => RelayedEventSource.parse('test')!;
+
+  @override
+  Map<String, String> get start => const {};
+
+  @override
+  (Map<String, String>, TranslatedEvent) step(
+    Map<String, String> state,
+    RelayedEvent event,
+  ) {
+    given.add(state);
+    if (jsonDecode(utf8.decode(event.bytes)) case {
+      'message': final String message,
+      'text': final String text,
+      'key': final String key,
+    }) {
+      return (
+        Map.unmodifiable({...state, message: text}),
+        MessageSaid(
+          addressInExternalSystem: chat,
+          containingAddress: null,
+          addressedTo: null,
+          replyEndpoint: null,
+          conversationKind: ConversationKind.notKnown,
+          forTheAgent: WhetherForTheAgent.everyMessageHereIsForTheAgent,
+          key: EventKey.parse(key)!,
+          node: UserSaid(
+            author: ann,
+            source: SourceMessageId.parse('chat|$key')!,
+            text: text,
+          ),
+        ),
+      );
+    }
+    return (state, const NothingToAdmit());
   }
 }
 
@@ -241,6 +289,7 @@ EventAdmittedToMission _startsChat(ObjectId event, String key) =>
         addressedTo: null,
         replyEndpoint: null,
         conversationKind: ConversationKind.notKnown,
+        forTheAgent: WhetherForTheAgent.everyMessageHereIsForTheAgent,
         key: EventKey.parse(key)!,
         node: UserSaid(
           author: ann,
@@ -635,5 +684,29 @@ void main() {
         isA<OperatorCloseMayOrMayNotBeIn>(),
       );
     });
+  });
+
+  test('a redelivered event leaves its translator\'s state as it was, so a '
+      'change between is kept', () async {
+    final logbook = _Logbook();
+    final translator = _LatestTextPerMessage();
+    logbook
+      ..recordEvent({'message': 'm', 'text': 'hello', 'key': 'said'})
+      ..recordEvent({'message': 'm', 'text': 'goodbye', 'key': 'edited'})
+      ..recordEvent({'message': 'm', 'text': 'hello', 'key': 'said'})
+      ..recordEvent({'look': true});
+    final running = runDockingStation(
+      subscribe: logbook.subscribe,
+      send: logbook.send,
+      startKind: Kind.parse(_startKind)!,
+      translators: [translator],
+      missions: const _TakesIn(),
+      turns: const _EverySaid(),
+    );
+    await pumpEventQueue();
+    await logbook.close();
+    await running;
+
+    expect(translator.given.last, {'m': 'goodbye'});
   });
 }

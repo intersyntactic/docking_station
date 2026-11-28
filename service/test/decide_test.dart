@@ -38,6 +38,7 @@ void main() {
       addressedTo: null,
       replyEndpoint: null,
       conversationKind: ConversationKind.notKnown,
+      forTheAgent: WhetherForTheAgent.everyMessageHereIsForTheAgent,
       key: EventKey.parse('message:1')!,
       node: UserSaid(
         author: ActorId.parse('teams:t/p')!,
@@ -77,6 +78,7 @@ void main() {
           addressedTo: null,
           replyEndpoint: null,
           conversationKind: ConversationKind.notKnown,
+          forTheAgent: WhetherForTheAgent.everyMessageHereIsForTheAgent,
           key: EventKey.parse(key)!,
           node: UserSaid(
             author: ActorId.parse('teams:t/p')!,
@@ -120,6 +122,7 @@ void main() {
       addressedTo: null,
       replyEndpoint: null,
       conversationKind: ConversationKind.notKnown,
+      forTheAgent: WhetherForTheAgent.everyMessageHereIsForTheAgent,
       key: EventKey.parse(key)!,
       node: UserSaid(
         author: ActorId.parse('teams:t/p')!,
@@ -176,6 +179,7 @@ void main() {
       addressedTo: null,
       replyEndpoint: null,
       conversationKind: ConversationKind.notKnown,
+      forTheAgent: WhetherForTheAgent.everyMessageHereIsForTheAgent,
       key: EventKey.parse(key)!,
       node: UserSaid(
         author: ActorId.parse('teams:t/p')!,
@@ -254,6 +258,7 @@ void main() {
         addressedTo: null,
         replyEndpoint: null,
         conversationKind: ConversationKind.notKnown,
+        forTheAgent: WhetherForTheAgent.everyMessageHereIsForTheAgent,
         key: EventKey.parse(key)!,
         node: UserSaid(
           author: ActorId.parse('teams:t/p')!,

@@ -1,6 +1,39 @@
 Each version is tagged `service-vX.Y.Z` on the commit it is built from, and a
 deploy names the tag.
 
+## 0.12.0
+
+The 0.11 set: is_docking_station_api ^0.11.0, is_flight_rules ^0.12.0,
+teams_module v0.0.19 (commit e8f7774, pinned by sha) and whatsapp_module
+0.0.1 (commit 5e639e1), which bring is_relay 0.8.0 and is_airlock_api
+0.26.0. is_effects is no longer in the tree.
+
+**Deploys with every reader of admissions on api 0.11, or after them,
+never before.** Every message said now carries `forTheAgent`, and every
+decision `"decisionFormat": 1`; a reader on api 0.10 refuses both. The
+readers are agent_loop, loop_launcher (is_loop_launcher-v0.7.1) and the
+airlock. A 0.11 reader also reads every entry already written, so the
+readers can go first. The Teams relay doesn't need to move: relayed
+entries are unchanged.
+
+**A message starts a turn when its module says it is for the agent.**
+`EverySaidStartsATurn` is replaced by `StartsATurnWhenForTheAgent`: a
+message starts a turn when it was said where every message is for the
+agent, or it mentions the agent, or it replies to the agent. One that
+does none of these, or whose module can't tell, is admitted and read but
+starts no turn. Teams says every message is for the agent, since its app
+is delivered only one-to-one messages and @mentions, so Teams behaves as
+before.
+
+**WhatsApp's events are taken beside Teams'** (source `whatsapp`). A
+one-to-one chat is for the agent. A Cloud API group says not known,
+because Meta's group webhooks carry no mentions, so a group's messages
+are read but start no turn.
+
+**A redelivered event leaves a translator's state as it was.** Before, a
+retry of an earlier event could put back the state it had produced, so
+an edit could be undone by a redelivery of the message it edited.
+
 ## 0.11.0
 
 The 0.10 set: is_docking_station_api ^0.10.0, is_conversation_vocabulary
