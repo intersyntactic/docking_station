@@ -1,0 +1,44 @@
+name: test
+
+# One job per package. The api is published, so it gets a publish dry run;
+# the service is publish_to: none, so instead both of its programs are
+# compiled, which catches a dependency that breaks the build but not the
+# analyzer. Ubuntu only: no test opens a socket or asks who is at the other
+# end of one. Weekly as well, because a new runner image or Dart SDK can
+# break what passes here with no change in the repo.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 20 * * 0'
+  workflow_dispatch:
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docking_station_api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: dart pub get
+      - run: dart analyze --fatal-infos
+      - run: dart test
+      - run: dart pub publish --dry-run
+
+  service:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: dart pub get
+      - run: dart analyze --fatal-infos
+      - run: dart test
+      - run: dart compile exe bin/docking_station.dart -o "$RUNNER_TEMP/docking_station"
+      - run: dart compile exe bin/close_trajectory.dart -o "$RUNNER_TEMP/close_trajectory"
