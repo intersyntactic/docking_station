@@ -269,8 +269,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "1c53730"
-      resolved-ref: "1c5373083c3f72450ea17cfb3286854d08e9a8ff"
+      ref: "7f478bf02541d4d5c41cd66753daaf438b901a72"
+      resolved-ref: "7f478bf02541d4d5c41cd66753daaf438b901a72"
       url: "https://github.com/intersyntactic/teams_module.git"
     source: git
     version: "0.0.18"

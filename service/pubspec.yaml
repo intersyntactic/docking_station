@@ -19,7 +19,7 @@ dependencies:
   is_teams_module:
     git:
       url: https://github.com/intersyntactic/teams_module.git
-      ref: 1c53730
+      ref: 7f478bf02541d4d5c41cd66753daaf438b901a72
 
 dev_dependencies:
   lints: ^6.1.0

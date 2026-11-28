@@ -5,7 +5,7 @@ deploy names the tag.
 
 The 0.10 set: is_docking_station_api ^0.10.0, is_conversation_vocabulary
 ^0.2.0 (in place of is_conversation_shapes), checked_json ^0.4.0,
-is_flight_rules ^0.11.0 and teams_module v0.0.18, which bring is_relay
+is_flight_rules ^0.11.0 and teams_module v0.0.18 (commit 7f478bf, pinned by sha because the tag is annotated), which bring is_relay
 0.7.0, is_effects 0.19.0 and is_airlock_api 0.25.0. The checked_json 0.3
 step is skipped (agreed with infra, 28 Nov).
 
