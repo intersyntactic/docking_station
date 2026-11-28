@@ -4,18 +4,22 @@ published from. Versions up to 0.3.0 were published as
 
 ## 0.10.0
 
-Breaking in code only. The logbook's JSON is unchanged.
+Breaking in code only. The logbook's JSON is unchanged, and entries already
+written read as before.
 
-- On is_conversation_vocabulary ^0.2.0, which adds `RepliesInWhatsAppChat`, a
-  `ReplyEndpoint` case for the WhatsApp Cloud API, and on checked_json
-  ^0.4.0, where a `JsonObject` can't be changed at any depth and
-  `JsonObject.of` copies its map, so it is never `const`.
+- On is_conversation_vocabulary ^0.2.0. A reply endpoint is now one of two
+  general cases, named for how a reply is kept to its conversation:
+  `RepliesUnderWebAddress` (by where it is sent) or
+  `RepliesWithPinnedBodyFields` (by fields its body must carry). The
+  Slack-specific `RepliesInSlackConversation` is gone. A decision recorded
+  with the old `in-slack-conversation` endpoint still reads, as the pinned
+  fields it meant, and a test holds that for both readers.
+- On checked_json ^0.4.0, where a `JsonObject` can't be changed at any depth
+  and `JsonObject.of` copies its map, so it is never `const`.
 - On is_annotation_shapes ^0.5.0, its release on checked_json ^0.4.0.
-- `path_start.dart` now reaches the vocabulary's `whatsapp_chat.dart`, which
-  holds a WhatsApp endpoint's chat and ids and decodes nothing anyone said.
-  The import test allows it by name. A test holds that `readTrajectoryStart`
-  and `decodeDecision` read a WhatsApp endpoint the same, for a person and
-  for a group.
+- A test holds `readTrajectoryStart` and `decodeDecision` to the same
+  pinned-fields endpoint. `path_start.dart` reaches the vocabulary's
+  renamed `reply_endpoint_case.dart`, allowed by name.
 
 ## 0.9.0
 

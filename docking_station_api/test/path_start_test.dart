@@ -9,19 +9,16 @@ import 'dart:typed_data';
 import 'package:checked_json/checked_json.dart' show JsonObject;
 import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
     show
-        GraphApiVersion,
-        RepliesInWhatsAppChat,
-        WhatsAppBusinessPhoneNumberId,
-        WhatsAppGroupChat,
-        WhatsAppGroupId,
-        WhatsAppIndividualChat,
-        WhatsAppUserPhoneNumber;
+        PinnedBodyFields,
+        ReplyEndpoint,
+        RepliesWithPinnedBodyFields,
+        encodeReplyEndpoint;
 import 'package:is_docking_station_api/is_docking_station_api.dart';
 import 'package:is_docking_station_api/path_start.dart';
 import 'package:is_shapes/is_shapes.dart'
     show DecidedBy, MissionId, TrajectoryId;
 import 'package:is_web_address_vocabulary/is_web_address_vocabulary.dart'
-    show Origin;
+    show Origin, WebPath;
 import 'package:test/test.dart';
 
 import 'decision_wire_test.dart' show event, translatedEvents, rules, said;
@@ -98,19 +95,8 @@ void main() {
     }
   });
 
-  test('reads a WhatsApp reply endpoint as decodeDecision does, for a '
-      'person and a group', () {
-    for (final chat in [
-      WhatsAppIndividualChat(WhatsAppUserPhoneNumber.parse('61400000000')!),
-      WhatsAppGroupChat(WhatsAppGroupId.parse('HBgLMTY1MDM4Nzk0MzkVAgAS')!),
-    ]) {
-      final endpoint = RepliesInWhatsAppChat(
-        origin: Origin.parse('https://graph.facebook.com')!,
-        graphApiVersion: GraphApiVersion.parse('v27.0')!,
-        phoneNumberId: WhatsAppBusinessPhoneNumberId.parse('106540352242922')!,
-        chat: chat,
-      );
-      final decision = EventAdmittedToMission(
+  EventAdmittedToMission startsWith(ReplyEndpoint endpoint) =>
+      EventAdmittedToMission(
         event,
         by: DecidedBy.rules,
         translatedEvent: MessageSaid(
@@ -125,6 +111,30 @@ void main() {
         rules: rules,
         startsTurn: true,
       );
+
+  RepliesWithPinnedBodyFields pinned(
+    String origin,
+    String path,
+    Map<String, String> fields,
+  ) => RepliesWithPinnedBodyFields.at(
+    origin: Origin.parse(origin)!,
+    path: WebPath.parse(path)!,
+    pinned: PinnedBodyFields.of(fields)!,
+  )!;
+
+  test('reads an endpoint with pinned body fields as decodeDecision does', () {
+    for (final endpoint in [
+      pinned('https://graph.facebook.com', '/v27.0/106540352242922/messages', {
+        'messaging_product': 'whatsapp',
+        'recipient_type': 'individual',
+        'to': '61400000000',
+      }),
+      pinned('https://slack.com', '/api/chat.postMessage', {
+        'channel': 'C0123ABCD',
+        'thread_ts': '1700000000.000100',
+      }),
+    ]) {
+      final decision = startsWith(endpoint);
       final full =
           decodeDecision(
                 DecisionEntryKind.eventAdmittedToMission,
@@ -135,6 +145,51 @@ void main() {
       expect(full.replyEndpoint, endpoint);
       expect(narrow.replyEndpoint, endpoint);
     }
+  });
+
+  test('a decision recorded with a Slack endpoint as 0.9 wrote it still '
+      'reads, in both readers, as its pinned fields', () {
+    // The endpoint exactly as is_conversation_vocabulary 0.1 wrote it, in
+    // both places an admission carries it. The service replays its own
+    // decisions at start and stops on one it can't read.
+    const asFirstWritten = {
+      'case': 'in-slack-conversation',
+      'origin': 'https://slack.com',
+      'channel': 'C0123ABCD',
+      'thread': '1700000000.000100',
+    };
+    final written = startsWith(
+      pinned('https://slack.com', '/api/chat.postMessage', {'channel': 'x'}),
+    );
+    final json = jsonDecode(utf8.decode(encodeDecision(written).$2));
+    if (json case {
+      'translatedEvent': final Map<String, Object?> translatedEvent,
+    }) {
+      translatedEvent['replyEndpoint'] = asFirstWritten;
+    }
+    if (json case final Map<String, Object?> top) {
+      top['replyEndpoint'] = asFirstWritten;
+    }
+    final body = Uint8List.fromList(utf8.encode(jsonEncode(json)));
+    final meant = pinned('https://slack.com', '/api/chat.postMessage', {
+      'channel': 'C0123ABCD',
+      'thread_ts': '1700000000.000100',
+    });
+    final full = decodeDecision(
+      DecisionEntryKind.eventAdmittedToMission,
+      body,
+    ) as EventAdmittedToMission?;
+    expect(full?.replyEndpoint, meant);
+    final entry = Uint8List.fromList([
+      ...utf8.encode('${DecisionEntryKind.eventAdmittedToMission}\n-\n'),
+      ...body,
+    ]);
+    expect((_read(entry) as EntryStartsTrajectory).replyEndpoint, meant);
+    // Written back, it takes the new form.
+    expect(
+      encodeReplyEndpoint(full!.replyEndpoint!).raw('case'),
+      'with-pinned-body-fields',
+    );
   });
 
   test('a trajectory is named by the whole entry, header included', () {
