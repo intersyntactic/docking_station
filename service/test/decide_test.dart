@@ -4,7 +4,7 @@ import 'dart:convert';
 
 import 'package:checked_json/checked_json.dart' show JsonObject;
 import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
-    show SourceMessageId, UserSaid;
+    show ConversationKind, SourceMessageId, UserSaid;
 import 'package:docking_station_service/docking_station_service.dart';
 import 'package:is_docking_station_api/is_docking_station_api.dart';
 import 'package:is_logbook_client/is_logbook_client.dart' show ObjectId;
@@ -14,8 +14,7 @@ import 'package:test/test.dart';
 
 final class _All implements DecidesWhichAddressStartsAMission, TurnRule {
   @override
-  JsonObject takeIn(AdmissibleEvent first) =>
-      const JsonObject.of({'tools': 'all'});
+  JsonObject takeIn(AdmissibleEvent first) => JsonObject.of({'tools': 'all'});
 
   @override
   bool startsTurn(MessageSaid said, AdmittedPlacement placement) => true;
@@ -38,6 +37,7 @@ void main() {
       containingAddress: null,
       addressedTo: null,
       replyEndpoint: null,
+      conversationKind: ConversationKind.notKnown,
       key: EventKey.parse('message:1')!,
       node: UserSaid(
         author: ActorId.parse('teams:t/p')!,
@@ -76,6 +76,7 @@ void main() {
           containingAddress: null,
           addressedTo: null,
           replyEndpoint: null,
+          conversationKind: ConversationKind.notKnown,
           key: EventKey.parse(key)!,
           node: UserSaid(
             author: ActorId.parse('teams:t/p')!,
@@ -118,6 +119,7 @@ void main() {
       containingAddress: channel,
       addressedTo: null,
       replyEndpoint: null,
+      conversationKind: ConversationKind.notKnown,
       key: EventKey.parse(key)!,
       node: UserSaid(
         author: ActorId.parse('teams:t/p')!,
@@ -173,6 +175,7 @@ void main() {
       containingAddress: channel,
       addressedTo: null,
       replyEndpoint: null,
+      conversationKind: ConversationKind.notKnown,
       key: EventKey.parse(key)!,
       node: UserSaid(
         author: ActorId.parse('teams:t/p')!,
@@ -250,6 +253,7 @@ void main() {
         containingAddress: channel,
         addressedTo: null,
         replyEndpoint: null,
+        conversationKind: ConversationKind.notKnown,
         key: EventKey.parse(key)!,
         node: UserSaid(
           author: ActorId.parse('teams:t/p')!,

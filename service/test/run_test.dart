@@ -6,7 +6,7 @@ import 'dart:typed_data';
 
 import 'package:checked_json/checked_json.dart' show JsonObject;
 import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
-    show SourceMessageId, UserSaid;
+    show ConversationKind, SourceMessageId, UserSaid;
 import 'package:docking_station_service/docking_station_service.dart';
 import 'package:is_docking_station_api/is_docking_station_api.dart';
 import 'package:is_logbook_client/is_logbook_client.dart';
@@ -184,6 +184,7 @@ final class _Translator implements TranslatesRelayedEvents<int> {
           containingAddress: null,
           addressedTo: null,
           replyEndpoint: null,
+          conversationKind: ConversationKind.notKnown,
           key: EventKey.parse(key)!,
           node: UserSaid(
             author: ann,
@@ -201,8 +202,7 @@ final class _TakesIn implements DecidesWhichAddressStartsAMission {
   const _TakesIn();
 
   @override
-  JsonObject takeIn(AdmissibleEvent first) =>
-      const JsonObject.of({'tools': 'all'});
+  JsonObject takeIn(AdmissibleEvent first) => JsonObject.of({'tools': 'all'});
 }
 
 final class _EverySaid implements TurnRule {
@@ -240,6 +240,7 @@ EventAdmittedToMission _startsChat(ObjectId event, String key) =>
         containingAddress: null,
         addressedTo: null,
         replyEndpoint: null,
+        conversationKind: ConversationKind.notKnown,
         key: EventKey.parse(key)!,
         node: UserSaid(
           author: ann,
@@ -248,7 +249,7 @@ EventAdmittedToMission _startsChat(ObjectId event, String key) =>
         ),
       ),
       placement: const StartsTrajectory(StartsMission()),
-      rules: const JsonObject.of({'tools': 'all'}),
+      rules: JsonObject.of({'tools': 'all'}),
       startsTurn: true,
     );
 

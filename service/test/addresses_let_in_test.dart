@@ -5,7 +5,7 @@ import 'dart:convert';
 
 import 'package:docking_station_service/docking_station_service.dart';
 import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
-    show SourceMessageId, UserSaid;
+    show ConversationKind, SourceMessageId, UserSaid;
 import 'package:is_docking_station_api/is_docking_station_api.dart';
 import 'package:is_shapes/is_shapes.dart' show ActorId;
 import 'package:test/test.dart';
@@ -61,6 +61,7 @@ MessageSaid _said(String address, {String? containing}) => MessageSaid(
       : AddressInExternalSystem.parse(containing)!,
   addressedTo: null,
   replyEndpoint: null,
+  conversationKind: ConversationKind.notKnown,
   key: EventKey.parse('message:1')!,
   node: UserSaid(
     author: ActorId.parse('teams:t/p')!,
