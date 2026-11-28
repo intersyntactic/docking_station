@@ -5,7 +5,7 @@
 library;
 
 import 'package:checked_json/checked_json.dart' show JsonObject;
-import 'package:is_conversation_shapes/is_conversation_shapes.dart'
+import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
     show SourceMessageId;
 import 'package:is_logbook_client/is_logbook_client.dart' show ObjectId;
 import 'package:is_shapes/is_shapes.dart' show MissionId, TrajectoryId;

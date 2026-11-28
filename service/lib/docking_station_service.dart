@@ -15,7 +15,6 @@
 /// docking station is in is_docking_station_api.
 library;
 
-import 'dart:convert';
 
 import 'package:checked_json/checked_json.dart'
     show JsonFieldException, JsonObject;
@@ -165,9 +164,14 @@ final class EverySaidStartsATurn implements TurnRule {
   bool startsTurn(MessageSaid said, AdmittedPlacement placement) => true;
 }
 
-JsonObject _object(String text, String what) =>
-    JsonObject.parse(jsonDecode(text)) ??
-    (throw FormatException('$what is not a JSON object'));
+/// [text] as a JSON object, refusing one that names a key twice.
+JsonObject _object(String text, String what) {
+  try {
+    return JsonObject.decode(text);
+  } on FormatException catch (e) {
+    throw FormatException('$what: ${e.message}');
+  }
+}
 
 void _onlyKeys(JsonObject json, Set<String> allowed, String what) {
   for (final key in json.keys) {

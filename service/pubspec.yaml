@@ -2,7 +2,7 @@ name: docking_station_service
 description: >-
   The docking station run as a service: it reads the logbook through its
   read socket and sends each decision through its write socket.
-version: 0.10.0
+version: 0.11.0
 repository: https://github.com/intersyntactic/docking_station
 publish_to: none
 
@@ -10,16 +10,16 @@ environment:
   sdk: ^3.13.0
 
 dependencies:
-  checked_json: ^0.2.1
-  is_docking_station_api: ^0.8.0
-  is_conversation_shapes: ^0.8.3
-  is_flight_rules: ^0.9.0
+  checked_json: ^0.4.0
+  is_docking_station_api: ^0.10.0
+  is_conversation_vocabulary: ^0.2.0
+  is_flight_rules: ^0.11.0
   is_logbook_client: ^0.4.0
   is_shapes: ^0.6.0
   is_teams_module:
     git:
       url: https://github.com/intersyntactic/teams_module.git
-      ref: de3f348154736b3955545c19fc8485f916037739
+      ref: 7f478bf02541d4d5c41cd66753daaf438b901a72
 
 dev_dependencies:
   lints: ^6.1.0

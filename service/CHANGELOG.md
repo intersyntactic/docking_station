@@ -1,6 +1,32 @@
 Each version is tagged `service-vX.Y.Z` on the commit it is built from, and a
 deploy names the tag.
 
+## 0.11.0
+
+The 0.10 set: is_docking_station_api ^0.10.0, is_conversation_vocabulary
+^0.2.0 (in place of is_conversation_shapes), checked_json ^0.4.0,
+is_flight_rules ^0.11.0 and teams_module v0.0.18 (commit 7f478bf, pinned by sha because the tag is annotated), which bring is_relay
+0.7.0, is_effects 0.19.0 and is_airlock_api 0.25.0. The checked_json 0.3
+step is skipped (agreed with infra, 28 Nov).
+
+**Deploys with every reader of admissions on api 0.10, or after them,
+never before.** Admissions this service writes now carry a
+`conversationKind` on every message said, and a Slack reply endpoint is
+written `with-pinned-body-fields`. A reader on api 0.8 or 0.9 refuses both.
+The readers are agent_loop, loop_launcher (is_loop_launcher-v0.7.0) and
+the airlock. A 0.10 reader also reads every entry already written, so the
+readers can go first.
+
+Teams messages say their kind of conversation: one-to-one, group chat, or
+not known (a channel, which a bot activity can't tell apart). Nothing acts
+on the kind yet.
+
+**The config file and the flight-rules file are now read refusing an
+object that names a key twice.** Before, the last value won without a
+word. A file with a repeated key now stops the service at startup, naming
+the file. syd's live files and infra main's copies were checked on
+28 Nov and have none.
+
 ## 0.10.0
 
 On teams_module v0.0.16 (commit de3f348, pinned by sha because the tag is
