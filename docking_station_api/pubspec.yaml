@@ -11,7 +11,7 @@ environment:
 
 dependencies:
   checked_json: ^0.3.0
-  is_annotation_shapes: ^0.3.2
+  is_annotation_shapes: ^0.4.0
   # path_start.dart takes ObjectId from here alone, so the airlock that
   # imports it reaches no logbook code at all.
   is_content_id: ^0.2.0
@@ -20,11 +20,6 @@ dependencies:
   is_conversation_vocabulary: ^0.1.1
   is_logbook_format: ^0.1.0
   is_shapes: ^0.6.0
-
-# Until is_annotation_shapes releases on checked_json ^0.3.0. Remove before
-# publishing.
-dependency_overrides:
-  checked_json: ^0.3.0
 
 dev_dependencies:
   is_web_address_vocabulary: ^0.1.2

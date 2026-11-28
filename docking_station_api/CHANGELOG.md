@@ -15,6 +15,8 @@ Breaking in code only. The logbook's JSON is unchanged.
 - On checked_json ^0.3.0. Every entry is decoded refusing an object that
   names a field twice, where `jsonDecode` kept the last value without a
   word. Such an entry now reads as one this package does not write.
+- On is_annotation_shapes ^0.4.0, its release on checked_json ^0.3.0.
+  `VerdictOnShownMessage` is unchanged.
 - `path_start.dart`, which the airlock imports, takes `ReplyEndpoint` from
   is_conversation_vocabulary's `reply_endpoint.dart` alone, and a test holds
   that it reaches none of that package's stranger-facing files (`UserSaid`,
