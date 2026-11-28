@@ -17,6 +17,7 @@ import 'package:is_shapes/is_shapes.dart'
     show DecidedBy, MissionId, TrajectoryId;
 
 import 'decision.dart';
+import 'decision_format.dart';
 
 import 'translated_event.dart';
 import 'translated_event_wire.dart';
@@ -24,6 +25,7 @@ import 'translated_event_wire.dart';
 /// [decision] as the entry the docking station sends: its kind, and its body.
 (Kind, Uint8List) encodeDecision(AdmissionDecision decision) {
   final json = <String, Object?>{
+    decisionFormatField: decisionFormatWritten,
     if (decision case DecidedAtEvent(:final event)) 'event': event.hex,
     'by': decision.by.name,
   };
@@ -153,12 +155,13 @@ enum _NotAdmittedWhy {
 /// Null for anything [encodeDecision] doesn't write, an extra field
 /// included: it is our own wire, read strictly.
 AdmissionDecision? decodeDecision(Kind kind, Uint8List body) {
-  final JsonObject json;
+  final JsonObject? json;
   try {
-    json = JsonObject.decode(utf8.decode(body));
+    json = withoutKnownDecisionFormat(JsonObject.decode(utf8.decode(body)));
   } on FormatException {
     return null;
   }
+  if (json == null) return null;
   final by = _read(json.raw('by'), _decidedBy);
   if (by == null) return null;
   // A close by an operator is the one decision at no event.

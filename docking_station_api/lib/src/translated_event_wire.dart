@@ -22,6 +22,7 @@ import 'package:is_shapes/is_shapes.dart' show ActorId, TrajectoryId;
 
 import 'translated_event.dart';
 import 'translated_event_case.dart';
+import 'whether_for_the_agent.dart';
 
 /// Every node shape a translated event can carry, by the field it travels in,
 /// as each node's package names them. A `shape` is one namespace across every
@@ -43,7 +44,7 @@ const translatedEventNodeShapes = <String, Set<String>>{
 /// `<reply endpoint>` is as `encodeReplyEndpoint` writes it.
 ///
 /// `<case>` and its fields are `message-said`, with `"node"`, a
-/// [UserSaid]; `message-changed`, with `"from"?`, `"message"` and
+/// [UserSaid], `"conversationKind"` and `"forTheAgent"`; `message-changed`, with `"from"?`, `"message"` and
 /// `"change"`, a [WhatChanged]; `actors-joined-address`, with `"from"?` and
 /// `"joiners"`; `shown-message-judged`, with `"from"`, `"to"` and
 /// `"verdict"`, a [VerdictOnShownMessage]; `person-asked-to-close-trajectory`,
@@ -57,9 +58,10 @@ JsonObject encodeTranslatedEvent(AddressedEvent event) => JsonObject.of({
     'replyEndpoint': encodeReplyEndpoint(endpoint),
   'key': event.key.value,
   ...switch (event) {
-    MessageSaid(:final node, :final conversationKind) => {
+    MessageSaid(:final node, :final conversationKind, :final forTheAgent) => {
       'node': node.toJson(),
       'conversationKind': conversationKind.wire,
+      'forTheAgent': forTheAgent.wire,
     },
     MessageChanged(:final from, :final message, :final change) => {
       'from': ?from?.value,
@@ -133,8 +135,9 @@ AddressedEvent decodeTranslatedEvent(JsonObject json) {
         key: key,
         node: UserSaid.fromJson(json.object('node')),
         conversationKind: _conversationKind(json),
+        forTheAgent: _forTheAgent(json),
       ),
-      const {'node', 'conversationKind'},
+      const {'node', 'conversationKind', 'forTheAgent'},
     ),
     TranslatedEventCase.messageChanged => (
       MessageChanged(
@@ -227,4 +230,13 @@ ConversationKind _conversationKind(JsonObject json) {
   if (!json.has('conversationKind')) return ConversationKind.notKnown;
   return ConversationKind.parse(json.string('conversationKind')) ??
       (throw JsonFieldException('conversationKind', 'a conversation kind'));
+}
+
+/// The `forTheAgent` of something said. An entry written before the field
+/// existed has none, and reads as [WhetherForTheAgent.notKnown], as
+/// [_conversationKind] reads a missing kind.
+WhetherForTheAgent _forTheAgent(JsonObject json) {
+  if (!json.has('forTheAgent')) return WhetherForTheAgent.notKnown;
+  return WhetherForTheAgent.parse(json.string('forTheAgent')) ??
+      (throw JsonFieldException('forTheAgent', 'whether for the agent'));
 }

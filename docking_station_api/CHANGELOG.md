@@ -2,6 +2,35 @@ Each version is tagged `docking_station_api-vX.Y.Z` on the commit it is
 published from. Versions up to 0.3.0 were published as
 `is_admission_vocabulary` and tagged `admission_vocabulary-vX.Y.Z`.
 
+## 0.11.0
+
+Breaking. Every entry already in a logbook still reads, but a 0.10 reader
+refuses an entry 0.11 writes, since it doesn't know `"forTheAgent"`.
+
+- Every decision entry names its format: `"decisionFormat": 1`. An entry
+  with none is one written before the field existed, and reads as before.
+  Both readers (`decodeDecision` and path_start's `readTrajectoryStart`)
+  refuse any other format. This lets the next field land reader first:
+  readers learn format 2, and only once every live reader knows it does the
+  docking station write it, so no more all-readers windows for a new field
+  or value.
+- `MessageSaid` takes a required `forTheAgent`, a `WhetherForTheAgent`:
+  every message where it was said is for the agent (a one-to-one chat, or
+  a place that delivers only what is for the agent, as Teams delivers only
+  @mentions), it mentions the agent, it replies to the agent (to a message
+  of the agent's, or in a thread the agent has posted in), it does none of
+  these, or not known. It is what
+  decides whether a message starts a turn, and only the module can tell
+  it: one kind of conversation delivers differently in different external
+  systems, as a Teams group chat delivers only @mentions while a WhatsApp
+  group delivers everything. On the wire it is `"forTheAgent"` inside a
+  `message-said` translated event. An entry written before it existed
+  reads as not known, as a missing `conversationKind` does. A value it
+  doesn't know is refused.
+- `TranslatesRelayedEvents` documents that the docking station discards
+  the state a translator returns for a redelivered event (an address and
+  key already translated).
+
 ## 0.10.0
 
 Breaking. Every entry already in a logbook still reads.

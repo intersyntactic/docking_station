@@ -27,6 +27,8 @@ import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
 import 'package:is_logbook_format/is_logbook_format.dart' show Kind;
 import 'package:is_shapes/is_shapes.dart' show ActorId, TrajectoryId;
 
+import 'whether_for_the_agent.dart';
+
 /// Where relayed events come from, such as `teams`: a lowercase letter, then
 /// lowercase letters, digits and `-`, as an address in an external system
 /// starts.
@@ -159,6 +161,11 @@ final class RelayedEvent {
 /// beginning, already-admitted events included, so [step] must give the
 /// same answer for the same events in the same order, and must not change
 /// the state it is given.
+///
+/// An event translated to an address and key already translated, as a
+/// redelivery is, is still translated, but the docking station discards the
+/// state [step] returns for it and keeps the state before. So a redelivery
+/// never steps the state back past what came between it and the first.
 abstract interface class TranslatesRelayedEvents<S> {
   /// The [RelayedEvent.source] whose events this translates.
   RelayedEventSource get source;
@@ -260,6 +267,7 @@ final class MessageSaid extends AdmissibleEvent {
     required super.key,
     required this.node,
     required this.conversationKind,
+    required this.forTheAgent,
   });
 
   /// What was said.
@@ -269,6 +277,12 @@ final class MessageSaid extends AdmissibleEvent {
   /// translated it can tell: an agent answers only where its owner can see,
   /// so the place is always stated, [ConversationKind.notKnown] included.
   final ConversationKind conversationKind;
+
+  /// Whether it is for the agent, as the module that translated it can tell
+  /// from how it was delivered: what decides whether it starts a turn. Not
+  /// read from [conversationKind], since one kind of conversation delivers
+  /// differently in different external systems.
+  final WhetherForTheAgent forTheAgent;
 
   @override
   ActorId get from => node.author;

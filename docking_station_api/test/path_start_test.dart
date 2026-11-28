@@ -39,6 +39,45 @@ AdmittedTrajectoryEntry<JsonObject> _read(Uint8List entry) =>
     readTrajectoryStart(entry, rules: JsonObject.parse);
 
 void main() {
+  test('both readers read an entry in format 1 or with no format, and '
+      'refuse every other format', () {
+    final decision = EventAdmittedToMission(
+      event,
+      by: DecidedBy.rules,
+      translatedEvent: said,
+      placement: const StartsTrajectory(StartsMission()),
+      rules: rules,
+      startsTurn: true,
+    );
+    final (kind, body) = encodeDecision(decision);
+    final written =
+        jsonDecode(utf8.decode(body)) as Map<String, Object?>; // cast-ok: test
+    expect(written['decisionFormat'], 1);
+    bool bothRead(Map<String, Object?> json) {
+      final full = decodeDecision(
+        kind,
+        Uint8List.fromList(utf8.encode(jsonEncode(json))),
+      );
+      final narrow = _read(_raw(kind.name, json));
+      expect(
+        narrow is EntryStartsTrajectory,
+        full != null,
+        reason: 'the two readers disagree on $json',
+      );
+      return full != null;
+    }
+
+    expect(bothRead(written), isTrue);
+    expect(bothRead({...written}..remove('decisionFormat')), isTrue);
+    for (final other in <Object?>[0, 2, '1', 1.5, null]) {
+      expect(
+        bothRead({...written, 'decisionFormat': other}),
+        isFalse,
+        reason: '$other',
+      );
+    }
+  });
+
   test('agrees with decodeDecision on every admitted case', () {
     final mission = MissionId.parse(_b)!;
     final trajectory = TrajectoryId.parse(_c)!;
@@ -107,6 +146,7 @@ void main() {
           key: said.key,
           node: said.node,
           conversationKind: said.conversationKind,
+          forTheAgent: said.forTheAgent,
         ),
         placement: const StartsTrajectory(StartsMission()),
         rules: rules,
