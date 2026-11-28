@@ -20,6 +20,10 @@ dependencies:
     git:
       url: https://github.com/intersyntactic/teams_module.git
       ref: 7f478bf02541d4d5c41cd66753daaf438b901a72
+  is_whatsapp_module:
+    git:
+      url: https://github.com/intersyntactic/whatsapp_module.git
+      ref: 921b9b556e6c96b64cea1b29a5706e6dfa7b9d88
 
 dev_dependencies:
   lints: ^6.1.0

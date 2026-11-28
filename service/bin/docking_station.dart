@@ -28,6 +28,8 @@ import 'dart:io';
 import 'package:docking_station_service/docking_station_service.dart';
 import 'package:is_logbook_client/is_logbook_client.dart';
 import 'package:is_teams_module/is_teams_module.dart' show TeamsEventTranslator;
+import 'package:is_whatsapp_module/is_whatsapp_module.dart'
+    show WhatsAppEventTranslator;
 
 const _options = {
   'read-socket',
@@ -81,7 +83,7 @@ Future<void> main(List<String> arguments) async {
       subscribe: (kinds) => reader.subscribe(kinds: kinds),
       send: writer.write,
       startKind: startKind,
-      translators: const [TeamsEventTranslator()],
+      translators: const [TeamsEventTranslator(), WhatsAppEventTranslator()],
       missions: addressesLetIn,
       turns: const StartsATurnWhenForTheAgent(),
     );
