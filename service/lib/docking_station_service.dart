@@ -15,7 +15,6 @@
 /// docking station is in is_docking_station_api.
 library;
 
-
 import 'package:checked_json/checked_json.dart'
     show JsonFieldException, JsonObject;
 import 'package:is_docking_station_api/is_docking_station_api.dart';
@@ -154,14 +153,22 @@ final class FlightRulesByMissionAddress {
       byMissionAddress[address] ?? defaultRules;
 }
 
-/// Every message said starts a turn: Teams is taken to deliver only what
-/// @mentions the agent, so each one is asked of it. Whether Teams does is
-/// still to be confirmed in a real channel.
-final class EverySaidStartsATurn implements TurnRule {
-  const EverySaidStartsATurn();
+/// A message starts a turn when its module says it is for the agent: said
+/// where every message is, mentioning the agent, or replying to it. One
+/// that does none of these, or whose module can't tell, is admitted and
+/// read but starts no turn.
+final class StartsATurnWhenForTheAgent implements TurnRule {
+  const StartsATurnWhenForTheAgent();
 
   @override
-  bool startsTurn(MessageSaid said, AdmittedPlacement placement) => true;
+  bool startsTurn(MessageSaid said, AdmittedPlacement placement) =>
+      switch (said.forTheAgent) {
+        WhetherForTheAgent.everyMessageHereIsForTheAgent ||
+        WhetherForTheAgent.mentionsTheAgent ||
+        WhetherForTheAgent.repliesToTheAgent => true,
+        WhetherForTheAgent.neitherMentionsNorRepliesToTheAgent ||
+        WhetherForTheAgent.notKnown => false,
+      };
 }
 
 /// [text] as a JSON object, refusing one that names a key twice.

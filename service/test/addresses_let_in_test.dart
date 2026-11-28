@@ -53,8 +53,13 @@ String _config(Object? addressesLetIn) =>
 AddressesLetIn _parse(String config, {FlightRulesByMissionAddress? rules}) =>
     AddressesLetIn.parse(config, flightRules: rules ?? _rules);
 
-/// Something said at [address], in [containing].
-MessageSaid _said(String address, {String? containing}) => MessageSaid(
+/// Something said at [address], in [containing], [forTheAgent] or not.
+MessageSaid _said(
+  String address, {
+  String? containing,
+  WhetherForTheAgent forTheAgent =
+      WhetherForTheAgent.everyMessageHereIsForTheAgent,
+}) => MessageSaid(
   addressInExternalSystem: AddressInExternalSystem.parse(address)!,
   containingAddress: containing == null
       ? null
@@ -62,6 +67,7 @@ MessageSaid _said(String address, {String? containing}) => MessageSaid(
   addressedTo: null,
   replyEndpoint: null,
   conversationKind: ConversationKind.notKnown,
+  forTheAgent: forTheAgent,
   key: EventKey.parse('message:1')!,
   node: UserSaid(
     author: ActorId.parse('teams:t/p')!,
@@ -276,13 +282,21 @@ void main() {
     });
   });
 
-  test('every message said starts a turn', () {
-    expect(
-      const EverySaidStartsATurn().startsTurn(
-        _said(_chat),
-        const StartsTrajectory(StartsMission()),
-      ),
-      isTrue,
-    );
+  test('a message starts a turn when its module says it is for the agent, '
+      'and no other', () {
+    final startsTurn = {
+      for (final forTheAgent in WhetherForTheAgent.values)
+        forTheAgent: const StartsATurnWhenForTheAgent().startsTurn(
+          _said(_chat, forTheAgent: forTheAgent),
+          const StartsTrajectory(StartsMission()),
+        ),
+    };
+    expect(startsTurn, {
+      WhetherForTheAgent.everyMessageHereIsForTheAgent: true,
+      WhetherForTheAgent.mentionsTheAgent: true,
+      WhetherForTheAgent.repliesToTheAgent: true,
+      WhetherForTheAgent.neitherMentionsNorRepliesToTheAgent: false,
+      WhetherForTheAgent.notKnown: false,
+    });
   });
 }

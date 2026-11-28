@@ -83,7 +83,7 @@ Future<void> main(List<String> arguments) async {
       startKind: startKind,
       translators: const [TeamsEventTranslator()],
       missions: addressesLetIn,
-      turns: const EverySaidStartsATurn(),
+      turns: const StartsATurnWhenForTheAgent(),
     );
   } on LogbookNoRestartChanges catch (e) {
     _abort(e.why, 65);

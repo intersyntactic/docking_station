@@ -185,6 +185,7 @@ final class _Translator implements TranslatesRelayedEvents<int> {
           addressedTo: null,
           replyEndpoint: null,
           conversationKind: ConversationKind.notKnown,
+          forTheAgent: WhetherForTheAgent.everyMessageHereIsForTheAgent,
           key: EventKey.parse(key)!,
           node: UserSaid(
             author: ann,
@@ -218,12 +219,11 @@ final class _LatestTextPerMessage
     RelayedEvent event,
   ) {
     given.add(state);
-    if (jsonDecode(utf8.decode(event.bytes))
-        case {
-          'message': final String message,
-          'text': final String text,
-          'key': final String key,
-        }) {
+    if (jsonDecode(utf8.decode(event.bytes)) case {
+      'message': final String message,
+      'text': final String text,
+      'key': final String key,
+    }) {
       return (
         Map.unmodifiable({...state, message: text}),
         MessageSaid(
@@ -232,6 +232,7 @@ final class _LatestTextPerMessage
           addressedTo: null,
           replyEndpoint: null,
           conversationKind: ConversationKind.notKnown,
+          forTheAgent: WhetherForTheAgent.everyMessageHereIsForTheAgent,
           key: EventKey.parse(key)!,
           node: UserSaid(
             author: ann,
@@ -288,6 +289,7 @@ EventAdmittedToMission _startsChat(ObjectId event, String key) =>
         addressedTo: null,
         replyEndpoint: null,
         conversationKind: ConversationKind.notKnown,
+        forTheAgent: WhetherForTheAgent.everyMessageHereIsForTheAgent,
         key: EventKey.parse(key)!,
         node: UserSaid(
           author: ann,
