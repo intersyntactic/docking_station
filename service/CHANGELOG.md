@@ -1,6 +1,23 @@
 Each version is tagged `service-vX.Y.Z` on the commit it is built from, and a
 deploy names the tag.
 
+## 0.11.0
+
+The checked_json ^0.3.0 set: checked_json ^0.3.0, is_docking_station_api
+^0.9.0, is_flight_rules ^0.10.0 and teams_module v0.0.17 (commit 73bffb7),
+which bring is_relay 0.6.0, is_effects 0.18.0 and is_airlock_api 0.24.0.
+is_conversation_vocabulary ^0.1.1 replaces is_conversation_shapes.
+
+**The config file and the flight-rules file are now read refusing an
+object that names a key twice.** Before, the last value won without a
+word. A file with a repeated key now stops the service at startup, naming
+the file. syd's live files and infra main's copies were checked on
+28 Nov and have none.
+
+Planned for the checked_json 0.3 window, beside the Teams relay on
+v0.0.17. The projection and the wire are as in v0.0.16, so it reads that
+relay's entries too: the pairing is a plan, not a constraint.
+
 ## 0.10.0
 
 On teams_module v0.0.16 (commit de3f348, pinned by sha because the tag is

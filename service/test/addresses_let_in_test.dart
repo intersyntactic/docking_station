@@ -4,7 +4,7 @@
 import 'dart:convert';
 
 import 'package:docking_station_service/docking_station_service.dart';
-import 'package:is_conversation_shapes/is_conversation_shapes.dart'
+import 'package:is_conversation_vocabulary/is_conversation_vocabulary.dart'
     show SourceMessageId, UserSaid;
 import 'package:is_docking_station_api/is_docking_station_api.dart';
 import 'package:is_shapes/is_shapes.dart' show ActorId;
@@ -172,6 +172,11 @@ void main() {
       refuses(_config([_chat, _chat]));
     });
 
+    test('a key named twice, even with the same value both times', () {
+      final list = jsonEncode([_chat]);
+      refuses('{"addressesLetIn": $list, "addressesLetIn": $list}');
+    });
+
     test('no address at all', () {
       refuses(_config([]));
       refuses(jsonEncode(<String, Object?>{}));
@@ -257,6 +262,16 @@ void main() {
 
     test('something that is not a JSON object', () {
       refuses([_rulesFile]);
+    });
+
+    test('a key named twice, even with the same value both times', () {
+      final fields = jsonEncode(_rulesFile);
+      final inner = fields.substring(1, fields.length - 1);
+      final rules = jsonEncode(_claude);
+      expect(
+        () => FlightRulesByMissionAddress.parse('{$inner, "default": $rules}'),
+        throwsA(isA<FormatException>()),
+      );
     });
   });
 
