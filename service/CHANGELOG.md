@@ -1,6 +1,25 @@
 Each version is tagged `service-vX.Y.Z` on the commit it is built from, and a
 deploy names the tag.
 
+## 0.10.0
+
+On teams_module v0.0.16 (commit de3f348, pinned by sha because the tag is
+annotated), up from v0.0.13. That brings is_relay 0.5.1, which writes with
+is_logbook_client ^0.4.0, the same client this service reads with. v0.0.15
+couldn't be used: its is_relay 0.5.0 locks client 0.3.0.
+
+**Deploys together with the Teams relay on v0.0.16.** From v0.0.15 on, a
+`teams-event` entry holds a projection (`"projection": 1` and only the
+fields the module reads), and this service reads it strictly. An entry the
+older relay wrote, a raw Teams activity, now reads as nothing to admit,
+including on a replay from the start of the logbook. A relay left on
+v0.0.13 against this service would have every Teams event decided
+`translator-found-nothing`, with no error raised.
+
+Also from v0.0.14: a reply footer counts the turn and the step. The api
+stays on ^0.8.0 and checked_json on 0.2.x, since teams_module hasn't moved
+to api 0.9 yet. The is_lint_rules plugin is loaded, with no findings.
+
 ## 0.9.0
 
 On is_logbook_client ^0.4.0, which reads is_logbook 0.5.0's entry lines,

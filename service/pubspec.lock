@@ -241,6 +241,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.0"
+  is_relay:
+    dependency: transitive
+    description:
+      name: is_relay
+      sha256: "1ec3639f07bacc41782ed9976ca70229428762a02d407b81499ec5f6e1b40cf8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.1"
   is_reply_requests_api:
     dependency: transitive
     description:
@@ -269,11 +277,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v0.0.13"
-      resolved-ref: "980dd9520e9a1dfe60289de4f8f0ddd4ea22d6f3"
+      ref: de3f348154736b3955545c19fc8485f916037739
+      resolved-ref: de3f348154736b3955545c19fc8485f916037739
       url: "https://github.com/intersyntactic/teams_module.git"
     source: git
-    version: "0.0.13"
+    version: "0.0.16"
   is_tools_api:
     dependency: transitive
     description:
